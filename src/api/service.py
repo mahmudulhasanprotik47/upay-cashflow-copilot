@@ -16,7 +16,7 @@ from src import config as cfg  # Central settings.
 from src.features.build_features import FEATURES, build_features, load_data  # Phase 2 features.
 from src.i18n import messages  # English and Bangla templates.
 from src.i18n.messages import render  # Fills a template.
-from src.models.predict import load_artifacts, predict_and_explain  # Phase 2 model code (reused).
+from src.models.predict import alert_threshold, load_artifacts, predict_and_explain  # Phase 2 model code (reused).
 from src.rules import suggestions as rules  # Suggestion rules.
 
 # Feature groups used to check what-if inputs.
@@ -267,6 +267,35 @@ def model_results():
     return {"metrics": s["metrics"], "fairness": s["fairness"], "shap_global": s["shap_global"],
             "honest_summary": {"en": render("honest_summary", "en"), "bn": render("honest_summary", "bn")},
             "disclaimer": {"en": render("disclaimer", "en"), "bn": render("disclaimer", "bn")}}
+
+
+@functools.lru_cache(maxsize=1)
+def results():
+    """Trimmed metrics, fairness and SHAP for the judges' tab, plus the cash-out fee base of alerted users.
+
+    Values are copied from the loaded artifacts, never recomputed. No probabilities, no per-user data.
+    Impact: test user-months the app alerts (same threshold as predict_and_explain, no SHAP), with the fees
+    the existing cash-out saver reports wherever it would show. Computed once, then cached.
+    """
+    s = state()
+    clf, _reg, info = load_artifacts()
+    first_test = cfg.N_MONTHS - cfg.TEST_MONTHS
+    test = s["features"][s["features"].index.get_level_values("month") >= first_test]
+    alerted = test.index[clf.predict_proba(test.astype(float))[:, 1] >= alert_threshold(info)]
+    savers = [rules.cashout_saver(tx_for(int(u), int(m))) for u, m in alerted]
+    fees = sum(sv["fees_paid_bdt"] for sv in savers if sv)
+    shown = sum(1 for sv in savers if sv)
+    metrics = s["metrics"]
+    return {"simulated": True,
+            "metrics": {k: metrics[k] for k in ("view2_not_below_day20", "bootstrap_95ci", "min_balance_mae_bdt",
+                                                "lead_time_days", "sanity")},
+            "fairness": s["fairness"], "shap_global": s["shap_global"],
+            "impact": {"months": list(range(first_test, cfg.N_MONTHS)), "alerted_user_months": len(alerted),
+                       "saver_shown_user_months": shown, "fees_bdt": int(fees),
+                       "avg_fees_per_alerted_bdt": round(fees / len(alerted), 1) if len(alerted) else None,
+                       "avg_fees_per_saver_shown_bdt": round(fees / shown, 1) if shown else None,
+                       "fee_rate_pct": round(cfg.CASHOUT_FEE_RATE * 100, 2)},
+            "disclaimer": render("disclaimer", "en")}
 
 
 def month_summary(user_id, month, lang="en"):

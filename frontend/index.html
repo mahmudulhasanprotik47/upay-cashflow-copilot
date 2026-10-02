@@ -151,6 +151,22 @@
     .compare .soft { display: block; }
     .compare .chip { margin: 4px 0 0; font-size: 1rem; }
 
+    /* SECTION: tabs and results tab (tab bar, tables, judges' results). Nothing here may widen the page at 320px. */
+    .tabs { display: flex; gap: 8px; padding: 12px 16px 0; }
+    .tabs button {
+      flex: 1; min-width: 0; min-height: 44px; font: inherit; font-size: 0.9375rem; cursor: pointer;
+      background: var(--card-bg); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius-small);
+    }
+    .tabs button[aria-selected="true"] { background: var(--brand); color: var(--brand-text); border-color: var(--brand); font-weight: 600; }
+    .cards > * { min-width: 0; }
+    svg { max-width: 100%; }
+    .table-wrap { overflow-x: auto; max-width: 100%; margin-top: 8px; }
+    .table-wrap table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+    .table-wrap caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
+    .table-wrap th, .table-wrap td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .table-wrap td.num, .table-wrap th.num { text-align: right; white-space: nowrap; }
+    .plain-list { margin: 6px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+
     /* SECTION: footer (disclaimer and training-month banner). */
     .footer { padding: 0 16px 24px; }
     .training { margin: 0 0 10px; padding: 10px 14px; border-radius: var(--radius); background: var(--medium-bg); color: var(--medium-text); font-size: 0.9375rem; }
@@ -171,6 +187,14 @@
       </div>
     </header>
 
+    <!-- SECTION: tab bar. Wallet (default) and the English-only results tab for judges. -->
+    <div class="tabs" role="tablist" id="tab-list">
+      <button type="button" role="tab" id="tab-wallet" aria-controls="panel-wallet" aria-selected="true" data-s="tabWallet"></button>
+      <button type="button" role="tab" id="tab-results" aria-controls="panel-results" aria-selected="false" tabindex="-1" data-s="tabResults"></button>
+    </div>
+
+    <!-- SECTION: wallet panel. Everything below up to the footer belongs to the wallet tab. -->
+    <div role="tabpanel" id="panel-wallet" aria-labelledby="tab-wallet">
     <!-- SECTION: controls. User and month dropdowns. -->
     <div class="controls">
       <label><span data-s="userLabel"></span><select id="user-select"></select></label>
@@ -263,6 +287,16 @@
       <p class="training" id="training" data-s="trainingBanner" hidden></p>
       <p class="disclaimer" id="disclaimer"></p>
     </footer>
+    </div>
+
+    <!-- SECTION: results panel. English only by design; filled from GET /results the first time it opens. -->
+    <div role="tabpanel" id="panel-results" aria-labelledby="tab-results" lang="en" hidden>
+      <div class="cards" style="padding-top:12px">
+        <p class="soft" id="results-note"></p>
+        <p class="msg soft" id="results-msg" aria-live="polite"></p>
+        <div class="cards" id="results-body" style="padding:0"></div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -273,6 +307,8 @@
     const STRINGS = {
       en: {
         title: "upay Smart Cash-Flow Copilot",
+        tabWallet: "Wallet",
+        tabResults: "Results (for judges)",
         simulated: "Simulated data",
         langGroup: "Language",
         userLabel: "User",
@@ -342,6 +378,8 @@
       },
       bn: {
         title: "upay স্মার্ট ক্যাশ-ফ্লো কোপাইলট",
+        tabWallet: "ওয়ালেট",
+        tabResults: "ফলাফল (বিচারকদের জন্য)",
         simulated: "সিমুলেটেড ডেটা",
         langGroup: "ভাষা",
         userLabel: "ব্যবহারকারী",
@@ -399,8 +437,8 @@
         fields: {
           min_balance_d1_20: "১-২০ দিনের সর্বনিম্ন ব্যালেন্স (টাকা)",
           avg_daily_spend_d1_20: "দৈনিক গড় খরচ (টাকা)",
-          total_inflow_d1_20: "১-২০ দিনে আসা টাকা (টাকা)",
-          total_outflow_d1_20: "১-২০ দিনে খরচ হওয়া টাকা (টাকা)",
+          total_inflow_d1_20: "১-২০ দিনে কত টাকা এসেছে",
+          total_outflow_d1_20: "১-২০ দিনে কত টাকা খরচ হয়েছে",
           cashout_count_d1_20: "ক্যাশ আউটের সংখ্যা",
           cashout_amount_d1_20: "ক্যাশ আউটের পরিমাণ (টাকা)",
           days_since_last_inflow: "শেষবার টাকা আসার পর কত দিন (০-২০)",
@@ -408,6 +446,68 @@
           prev_month_shortfall: "গত মাসে টাকা কম পড়েছিল (০ = না, ১ = হ্যাঁ)",
           inflow_vs_prev_month: "গত মাসের তুলনায় আসা টাকা"
         }
+      },
+      // Results tab: English only by design (only the two tab labels above follow the language toggle).
+      // Functions receive values already formatted; every number comes from GET /results.
+      results: {
+        note: "This tab is in English only.",
+        loading: "Loading results…",
+        error: "Could not load the results. Open this tab again to retry.",
+        honestTitle: "What this shows, honestly",
+        simulated: "All data here is simulated. None of it is real upay data.",
+        ruleStrong: "The simple day-20 balance rule is already strong. On View 2 (user-months not already below the floor on day 20):",
+        prName: "PR-AUC",
+        recallName: "Recall at equal alert volume",
+        lead: (name, diff, lo, hi, clear, ahead) => name + ": model minus day-20 rule " + diff + " (95% bootstrap interval " +
+          lo + " to " + hi + "); " + (clear ? (ahead ? "a small lead" : "no lead") + ", not statistically clear." : "the interval does not include zero."),
+        addsTitle: "What the model adds:",
+        addMae: (model, naive) => "A minimum-balance estimate: typical error (MAE) " + model + " for the model vs " + naive +
+          " for the naive guess (minimum = day-20 balance).",
+        addReason: "A reason for every alert: the top factors behind that prediction.",
+        addDirection: (x) => "Direction check: share of test rows where a higher day-20 balance raised the risk: " + x + ".",
+        addFairness: "A fairness check by group (table below).",
+        addLeak: (shuffled, holdout, same) => "Leakage tests: a model trained on shuffled labels scores test ROC-AUC " + shuffled +
+          ". View 2 PR-AUC on users never seen in training: " + holdout + ", against " + same + " for the main model on the same users.",
+        timing: (n, median, mean) => "Alerts come on day 20, so warning time is short. For the " + n +
+          " test shortfalls the model caught, the first dip below the floor came a median of " + median +
+          " day(s) after day 20 (mean " + mean + "). This does not cover shortfalls the model missed.",
+        bufferRule: "The buffer is a rule, not a model output: 3 days of the user's own average daily spending, rounded up to " +
+          "500 BDT, at least 500 BDT, never more than the day-20 balance rounded down to 500 BDT.",
+        feePlaceholder: (pct) => "The cash-out fee rate of " + pct + "% is a placeholder, not sourced.",
+        decide: "Suggestions only. The user decides; nothing happens automatically.",
+        tableTitle: "Model and baselines",
+        caption: (months) => "View 2, simulated test months " + months,
+        colMethod: "Method",
+        rowModel: "Model",
+        rowRule: "Day-20 balance rule",
+        rowPersistence: "Persistence (alert if last month had a shortfall)",
+        notInArtifacts: "not in artifacts",
+        rowDiff: "Model minus day-20 rule (difference of the two values above)",
+        rowInterval: "95% bootstrap interval",
+        range: (lo, hi) => lo + " to " + hi,
+        maeTitle: "Minimum-balance estimate (typical error, lower is better)",
+        maeModel: "Model",
+        maeNaive: "Naive guess (minimum = day-20 balance)",
+        shapTitle: "Why the model alerts",
+        shapNote: "Average size of each input's effect on the model (mean |SHAP|), top 8. Patterns in simulated data, not causes.",
+        featureNames: { balance_day20: "Day-20 balance" },   // Others fall back to the wallet's English field labels.
+        fairTitle: "Fairness check (simulated test months, model alerts)",
+        attrNames: { income_band: "Income band", region: "Region", age_band: "Age band" },
+        fairCols: ["Group", "Rows", "Shortfall rate", "Alert rate", "Recall", "False-alarm rate", "Low sample"],
+        yes: "yes",
+        no: "no",
+        gaps: (recall, fpr) => "Largest gaps: recall " + recall + ", false-alarm rate " + fpr + ".",
+        fairLine: (groups, low) => (low === 0 ? "All " + groups + " groups have enough rows; none is flagged low-sample."
+          : low + " of " + groups + " groups are flagged low-sample.") +
+          " These gaps are measured on simulated data. They do not show that there is no bias; re-check them on real data.",
+        pathTitle: "Path to real data",
+        path: [
+          "Pilot with an opted-in group of users under a data-sharing agreement.",
+          "Replace the simulated data with real history and re-run the same tests (leakage, fairness, direction sanity).",
+          "Source the real cash-out fee schedule and replace the placeholder rate.",
+          "Measure real alert timing and test earlier alert days.",
+          "Handle consent, data minimisation and security before any pilot."
+        ]
       }
     };
 
@@ -416,7 +516,8 @@
     const TRAINING_MONTHS = [0, 1, 2, 3];
     let lang = "en";
     let requestCounter = 0;                   // Forecast requests.
-    const counters = { summary: 0, savings: 0, whatif: 0 };   // One counter per new section.
+    const counters = { summary: 0, savings: 0, whatif: 0, results: 0 };   // One counter per new section.
+    let resultsData = null;                   // GET /results, kept in memory after the first successful load.
     let lastForecast = null;                  // Kept so the chart text can be redrawn without a new request.
     let lastSavingsBody = null;               // Last savings request, re-sent when the language changes.
     // What-if state: which user-month it belongs to, the API's day-20 balance, whether the slider was moved.
@@ -446,10 +547,14 @@
       return node;
     }
     // Formats a number exactly as given (no rounding of whole numbers) in Bangla or English digits.
-    function num(n) {
-      return new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US", { maximumFractionDigits: 20 }).format(n);
+    // An optional language (the English-only results tab passes "en"); the default is the page language.
+    function num(n, inLang = lang) {
+      return new Intl.NumberFormat(inLang === "bn" ? "bn-BD" : "en-US", { maximumFractionDigits: 20 }).format(n);
     }
-    const taka = (n) => "৳" + num(n);
+    const taka = (n, inLang = lang) => "৳" + num(n, inLang);
+    // Metric formatters for the results tab: 3 fixed decimals, and an explicit sign for differences.
+    const fixed3 = (x) => Number(x).toFixed(3);
+    const signed3 = (x) => (x > 0 ? "+" : "") + Number(x).toFixed(3);
     const selectedUser = () => $("user-select").value;
     const selectedMonth = () => $("month-select").value;
 
@@ -721,12 +826,13 @@
 
     // SECTION: month summary. Bars for categories and weeks; widths are scaled to the largest amount
     // in each list for display only, and every number shown is the API's.
-    function bars(list, items) {
+    // The optional fmt formats each amount; the default (taka) keeps the month-summary bars as they were.
+    function bars(list, items, fmt = taka) {
       const most = Math.max(0, ...items.map((i) => i.amount));
       list.replaceChildren(...items.map((i) => {
         const li = el("li");
         const row = el("div", "bar-row");
-        row.append(el("span", "", i.label), el("span", "bar-amount", taka(i.amount)));
+        row.append(el("span", "", i.label), el("span", "bar-amount", fmt(i.amount)));
         const track = el("div", "bar-track");
         track.setAttribute("aria-hidden", "true");
         const fill = el("div", "bar-fill");
@@ -884,6 +990,152 @@
     }
     $("wi-form").addEventListener("submit", (event) => { event.preventDefault(); tryWhatif(); });
 
+    // SECTION: results tab helpers. A card with a heading, and a real table (row headers, column headers)
+    // inside a scrolling box so it never widens the page.
+    function resultsCard(title, ...children) {
+      const card = el("section", "card");
+      card.append(el("h2", "", title), ...children);
+      return card;
+    }
+    function makeTable(caption, headers, rows) {
+      const table = el("table");
+      table.appendChild(el("caption", "", caption));
+      const headRow = el("tr");
+      headers.forEach((h, i) => { const th = el("th", i ? "num" : "", h); th.scope = "col"; headRow.appendChild(th); });
+      table.appendChild(el("thead")).appendChild(headRow);
+      const body = table.appendChild(el("tbody"));
+      for (const r of rows) {
+        const tr = body.appendChild(el("tr"));
+        r.forEach((c, i) => {
+          const cell = el(i ? "td" : "th", i ? "num" : "", c);
+          if (!i) cell.scope = "row";
+          tr.appendChild(cell);
+        });
+      }
+      const wrap = el("div", "table-wrap");
+      wrap.appendChild(table);
+      return wrap;
+    }
+    function plainList(items) {
+      const list = el("ul", "plain-list");
+      for (const item of items) list.appendChild(typeof item === "string" ? el("li", "", item) : item);
+      return list;
+    }
+
+    // SECTION: results tab render. Every number comes from GET /results; the only arithmetic is the
+    // model-minus-rule difference of two served values and the "interval includes zero" test.
+    function renderResults(d) {
+      const R = STRINGS.results;
+      const en = (x) => num(x, "en");
+      const m = d.metrics, v2 = m.view2_not_below_day20, ci = m.bootstrap_95ci, mae = m.min_balance_mae_bdt;
+      const lead = m.lead_time_days, sanity = m.sanity;
+      const includesZero = (range) => range[0] <= 0 && 0 <= range[1];
+      const prDiff = v2.model.pr_auc - v2.rule.pr_auc;
+      const recDiff = v2.equal_volume.model_recall - v2.equal_volume.rule_recall;
+      const prCi = ci.view2_pr_auc_diff, recCi = ci.view2_equal_volume_recall_diff;
+      const leadLine = (name, diff, range) => R.lead(name, signed3(diff), signed3(range[0]), signed3(range[1]), includesZero(range), diff > 0);
+
+      // 1. Honest summary: six statements.
+      const ruleItem = el("li");
+      ruleItem.append(el("span", "", R.ruleStrong), plainList([leadLine(R.prName, prDiff, prCi), leadLine(R.recallName, recDiff, recCi)]));
+      const addsItem = el("li");
+      addsItem.append(el("span", "", R.addsTitle), plainList([
+        R.addMae(taka(mae.model_all, "en"), taka(mae.naive_all, "en")),
+        R.addReason,
+        R.addDirection(fixed3(sanity.direction_share_up)),
+        R.addFairness,
+        R.addLeak(fixed3(sanity.shuffled_label_test_roc_auc), fixed3(sanity.holdout_users_view2_pr_auc),
+          fixed3(sanity.main_model_same_users_view2_pr_auc))
+      ]));
+      const cards = [resultsCard(R.honestTitle, plainList([
+        R.simulated, ruleItem, addsItem,
+        R.timing(en(lead.n), en(lead.median), en(lead.mean)),
+        R.bufferRule + " " + R.feePlaceholder(en(d.impact.fee_rate_pct)),
+        R.decide
+      ]))];
+
+      // 2. View 2 table: each method's served values, then the difference and the bootstrap intervals.
+      cards.push(resultsCard(R.tableTitle, makeTable(R.caption(d.impact.months.map(en).join(", ")),
+        [R.colMethod, R.prName, R.recallName], [
+          [R.rowModel, fixed3(v2.model.pr_auc), fixed3(v2.equal_volume.model_recall)],
+          [R.rowRule, fixed3(v2.rule.pr_auc), fixed3(v2.equal_volume.rule_recall)],
+          [R.rowPersistence, fixed3(v2.persistence.pr_auc), R.notInArtifacts],
+          [R.rowDiff, signed3(prDiff), signed3(recDiff)],
+          [R.rowInterval, R.range(signed3(prCi[0]), signed3(prCi[1])), R.range(signed3(recCi[0]), signed3(recCi[1]))]
+        ])));
+
+      // 3. Minimum-balance estimate: model vs naive error as two bars.
+      const maeBars = el("ul", "bars");
+      bars(maeBars, [{ label: R.maeModel, amount: mae.model_all }, { label: R.maeNaive, amount: mae.naive_all }], (x) => taka(x, "en"));
+      cards.push(resultsCard(R.maeTitle, maeBars));
+
+      // 4. Global SHAP importance, top 8, with plain names (raw name when there is no label).
+      const shap = Object.entries(d.shap_global.mean_abs_shap).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const shapBars = el("ul", "bars");
+      bars(shapBars, shap.map(([k, v]) => ({ label: R.featureNames[k] || STRINGS.en.fields[k] || k, amount: v })), fixed3);
+      cards.push(resultsCard(R.shapTitle, el("p", "soft", R.shapNote), shapBars));
+
+      // 5. Fairness: one table per column, exactly as the artifact has it, then what it supports.
+      const fairParts = [];
+      let groupCount = 0, lowCount = 0;
+      for (const [attr, info] of Object.entries(d.fairness)) {
+        const rows = Object.entries(info.groups).map(([g, x]) => {
+          groupCount += 1;
+          if (x.low_sample) lowCount += 1;
+          return [g, en(x.rows), fixed3(x.shortfall_rate), fixed3(x.alert_rate), fixed3(x.recall), fixed3(x.fpr), x.low_sample ? R.yes : R.no];
+        });
+        fairParts.push(makeTable(R.attrNames[attr] || attr, R.fairCols, rows),
+          el("p", "soft", R.gaps(fixed3(info.largest_gaps.recall), fixed3(info.largest_gaps.fpr))));
+      }
+      cards.push(resultsCard(R.fairTitle, ...fairParts, el("p", "", R.fairLine(en(groupCount), lowCount))));
+
+      // 7 and 8. Impact card (added in its own section below), then the path to real data.
+      const impact = impactCard(d.impact);
+      if (impact) cards.push(impact);
+      cards.push(resultsCard(R.pathTitle, plainList(R.path)));
+      cards.push(el("p", "disclaimer", d.disclaimer));
+      $("results-body").replaceChildren(...cards);
+    }
+    // Impact card placeholder until the impact section is added.
+    function impactCard(_impact) { return null; }
+
+    // SECTION: results tab load. Fetched once, the first time the tab opens; a failure lets the next open retry.
+    async function loadResults() {
+      const msg = $("results-msg");
+      msg.className = "msg soft";
+      msg.textContent = STRINGS.results.loading;
+      const r = await fetchJson("results", "/results");
+      if (!r) return;                                           // A newer request is running.
+      try {
+        if (!r.data) throw new Error("no data");
+        renderResults(r.data);
+        resultsData = r.data;
+        msg.textContent = "";
+      } catch (_e) {
+        msg.className = "msg form-error";
+        msg.textContent = STRINGS.results.error;
+      }
+    }
+
+    // SECTION: tabs. Shows one panel and hides the other; the wallet is never reloaded by switching.
+    // Left and right arrow keys move between tabs.
+    function showTab(name, focus) {
+      for (const t of ["wallet", "results"]) {
+        const on = t === name;
+        $("tab-" + t).setAttribute("aria-selected", String(on));
+        $("tab-" + t).tabIndex = on ? 0 : -1;
+        $("panel-" + t).hidden = !on;
+        if (on && focus) $("tab-" + t).focus();
+      }
+      if (name === "results" && !resultsData) loadResults();
+    }
+    $("tab-wallet").addEventListener("click", () => showTab("wallet"));
+    $("tab-results").addEventListener("click", () => showTab("results"));
+    $("tab-list").addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      showTab($("tab-wallet").getAttribute("aria-selected") === "true" ? "results" : "wallet", true);
+    });
+
     // SECTION: reset on user or month change. Old answers are dropped and the what-if waits for the new forecast.
     function resetSections() {
       counters.savings++; counters.whatif++;
@@ -918,6 +1170,7 @@
     (async function start() {
       buildMonths();
       buildWhatifFields();
+      $("results-note").textContent = STRINGS.results.note;
       applyStrings();
       if (await loadUsers()) {
         applyStrings();

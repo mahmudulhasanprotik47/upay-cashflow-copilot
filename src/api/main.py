@@ -137,3 +137,9 @@ def whatif(body: WhatIfRequest):
 def model_results():
     """Metrics, fairness, global SHAP and the honest summary."""
     return service.model_results()
+
+
+@app.get("/results")
+def results():
+    """Trimmed results for the judges' tab plus the cached cash-out fee base (English only)."""
+    return service.results()

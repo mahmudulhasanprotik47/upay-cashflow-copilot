@@ -25,7 +25,7 @@ All data is **simulated**. Nothing in this API moves money: every suggestion has
   "roughly 3 days of your usual spending". It is `true` when the balance limits the buffer: the text then says
   "close to your current balance" and makes no days claim.
 - A user with an alert never gets a savings plan (`status: "blocked_alert"`).
-- `income_band`, `region` and `age_band` never appear in any response except the fairness numbers in `/model-results`.
+- `income_band`, `region` and `age_band` never appear in any response except the fairness numbers in `/model-results` and `/results`.
 - `month_in_training` is `true` for months 0-3. Prefer months 4-5 (test months) in the demo.
 - Money values are whole BDT. `fee_rate_pct` is a placeholder rate (see `fee_rate_label`).
 
@@ -1388,6 +1388,63 @@ response has the full files)
     "en": "This is an estimate from simulated data, not a guarantee. You decide.",
     "bn": "এটি সিমুলেটেড ডেটা থেকে করা একটি অনুমান, কোনো নিশ্চয়তা নয়। সিদ্ধান্ত আপনার।"
   }
+}
+```
+
+Errors: none in normal use.
+
+---
+
+## GET /results
+
+Results for the judges' tab, **English only**. A trimmed copy of `/model-results` (values copied from the
+artifacts, never recomputed) plus `impact`, the cash-out fee base of alerted users. No probabilities
+(`calibration_bins` and `settings` are left out), no per-user data.
+
+- `metrics`: `view2_not_below_day20`, `bootstrap_95ci`, `min_balance_mae_bdt`, `lead_time_days`, `sanity`, exactly as in
+  `metrics.json`. `lead_time_days` covers only the shortfalls the model caught (`n`): days from day 20 to the first dip.
+- `fairness`, `shap_global`: exactly as in `fairness.json` and `shap_global.json`.
+- `impact`: test months (`months`) only. `alerted_user_months` = user-months where the app alerts (same threshold as the
+  forecast). `saver_shown_user_months` = those where the cash-out saver would show. `fees_bdt` = the saver's
+  `fees_paid_bdt` summed over those. `avg_fees_per_alerted_bdt` divides by `alerted_user_months`,
+  `avg_fees_per_saver_shown_bdt` by `saver_shown_user_months` (null if the count is 0). Fees are ones already paid on
+  days 1-20 at the placeholder `fee_rate_pct`. This is a fee base, not savings achieved.
+- Computed on the first call (about 0.6 s) and cached; later calls are instant.
+
+Request: `GET /results` (cut here: `metrics` keeps 2 sections, `fairness` keeps one group, `shap_global` keeps 2 features)
+
+```json
+{
+  "simulated": true,
+  "metrics": {
+    "bootstrap_95ci": {
+      "view2_equal_volume_recall_diff": [-0.0103, 0.0608],
+      "view2_pr_auc_diff": [-0.0015, 0.069]
+    },
+    "lead_time_days": {"mean": 2.05, "median": 1.0, "n": 303}
+  },
+  "fairness": {
+    "income_band": {
+      "groups": {
+        "low": {"alert_rate": 0.2367, "fpr": 0.0992, "low_sample": false, "recall": 0.6635, "rows": 866, "shortfall_rate": 0.2436}
+      },
+      "largest_gaps": {"fpr": 0.0378, "recall": 0.0502}
+    }
+  },
+  "shap_global": {
+    "mean_abs_shap": {"balance_day20": 1.7415, "avg_daily_spend_d1_20": 0.3508},
+    "method": "shap.TreeExplainer"
+  },
+  "impact": {
+    "months": [4, 5],
+    "alerted_user_months": 445,
+    "saver_shown_user_months": 213,
+    "fees_bdt": 12001,
+    "avg_fees_per_alerted_bdt": 27.0,
+    "avg_fees_per_saver_shown_bdt": 56.3,
+    "fee_rate_pct": 1.5
+  },
+  "disclaimer": "This is an estimate from simulated data, not a guarantee. You decide."
 }
 ```
 
