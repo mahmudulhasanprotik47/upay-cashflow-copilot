@@ -163,7 +163,7 @@ Request: `GET /users/1/months/4/forecast?lang=en`
     },
     {
       "type": "savings_blocked_alert",
-      "text": "Because your balance may run low this month, we are not suggesting savings right now. Keeping a buffer comes first."
+      "text": "Because your balance may run low this month, we are not suggesting savings right now. You may want to keep a buffer first."
     }
   ],
   "balance_by_day": [
@@ -318,7 +318,7 @@ Request: `GET /users/1/months/4/forecast?lang=bn`
     },
     {
       "type": "savings_blocked_alert",
-      "text": "এই মাসে আপনার ব্যালেন্স কমে যেতে পারে, তাই এখন আমরা সঞ্চয়ের পরামর্শ দিচ্ছি না। আগে কিছু টাকা হাতে রাখাই ভালো।"
+      "text": "এই মাসে আপনার ব্যালেন্স কমে যেতে পারে, তাই এখন আমরা সঞ্চয়ের পরামর্শ দিচ্ছি না। আগে কিছু টাকা হাতে রাখার কথা ভাবতে পারেন।"
     }
   ],
   "balance_by_day": [
@@ -467,7 +467,7 @@ Request: `GET /users/20/months/4/forecast?lang=en` (`balance_by_day` cut to 3 da
     },
     {
       "type": "savings_blocked_alert",
-      "text": "Because your balance may run low this month, we are not suggesting savings right now. Keeping a buffer comes first."
+      "text": "Because your balance may run low this month, we are not suggesting savings right now. You may want to keep a buffer first."
     }
   ],
   "balance_by_day": [
@@ -512,7 +512,7 @@ Request: `GET /users/8/months/4/forecast?lang=en` (`balance_by_day` cut to 3 day
       "value": 2101,
       "unit": "BDT",
       "direction": "up",
-      "text": "Your cash-outs so far this month: 2,101 BDT. In this simulated data, this goes with higher risk."
+      "text": "Cash taken out so far this month: 2,101 BDT. In this simulated data, this goes with higher risk."
     },
     {
       "feature": "avg_daily_spend_d1_20",
@@ -557,7 +557,7 @@ Request: `GET /users/8/months/4/forecast?lang=en` (`balance_by_day` cut to 3 day
     },
     {
       "type": "savings_blocked_alert",
-      "text": "Because your balance may run low this month, we are not suggesting savings right now. Keeping a buffer comes first."
+      "text": "Because your balance may run low this month, we are not suggesting savings right now. You may want to keep a buffer first."
     }
   ],
   "balance_by_day": [
@@ -613,7 +613,7 @@ Request: `GET /users/1/months/5/forecast?lang=en` (`balance_by_day` cut to 3 day
       "value": 17158,
       "unit": "BDT",
       "direction": "down",
-      "text": "Your cash-outs so far this month: 17,158 BDT. In this simulated data, this goes with lower risk."
+      "text": "Cash taken out so far this month: 17,158 BDT. In this simulated data, this goes with lower risk."
     }
   ],
   "suggestions": [
@@ -876,7 +876,7 @@ Request: `POST /savings-plan` `{"user_id": 1, "month": 4, "goal_bdt": 10000, "mo
   "plan": null,
   "options": [],
   "status": "blocked_alert",
-  "text": "Because your balance may run low this month, we are not suggesting savings right now. Keeping a buffer comes first.",
+  "text": "Because your balance may run low this month, we are not suggesting savings right now. You may want to keep a buffer first.",
   "disclaimer": "This is an estimate from simulated data, not a guarantee. You decide."
 }
 ```
@@ -1003,7 +1003,7 @@ Request: `POST /whatif` `{"user_id": 1, "month": 4, "overrides": {"balance_day20
       },
       {
         "type": "savings_blocked_alert",
-        "text": "Because your balance may run low this month, we are not suggesting savings right now. Keeping a buffer comes first."
+        "text": "Because your balance may run low this month, we are not suggesting savings right now. You may want to keep a buffer first."
       }
     ]
   },
@@ -1103,7 +1103,7 @@ Request: `POST /whatif` `{"user_id": 1, "month": 4, "overrides": {"balance_day20
       },
       {
         "type": "savings_blocked_alert",
-        "text": "এই মাসে আপনার ব্যালেন্স কমে যেতে পারে, তাই এখন আমরা সঞ্চয়ের পরামর্শ দিচ্ছি না। আগে কিছু টাকা হাতে রাখাই ভালো।"
+        "text": "এই মাসে আপনার ব্যালেন্স কমে যেতে পারে, তাই এখন আমরা সঞ্চয়ের পরামর্শ দিচ্ছি না। আগে কিছু টাকা হাতে রাখার কথা ভাবতে পারেন।"
       }
     ]
   },

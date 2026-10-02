@@ -85,12 +85,12 @@ MESSAGES = {
         "bn": "বিকল্প: মাসে {monthly} টাকা করে; লক্ষ্যে পৌঁছাতে {max_months} মাসের বেশি লাগবে।"},
     "savings_blocked_alert": {
         "en": "Because your balance may run low this month, we are not suggesting savings right now. "
-              "Keeping a buffer comes first.",
+              "You may want to keep a buffer first.",
         "bn": "এই মাসে আপনার ব্যালেন্স কমে যেতে পারে, তাই এখন আমরা সঞ্চয়ের পরামর্শ দিচ্ছি না। "
-              "আগে কিছু টাকা হাতে রাখাই ভালো।"},
+              "আগে কিছু টাকা হাতে রাখার কথা ভাবতে পারেন।"},
     "savings_no_history": {
         "en": "There are no earlier months to learn from yet, so we cannot suggest a savings plan.",
-        "bn": "শেখার মতো আগের কোনো মাস এখনো নেই, তাই আমরা সঞ্চয়ের পরিকল্পনা দিতে পারছি না।"},
+        "bn": "হিসাব করার মতো আগের কোনো মাসের তথ্য এখনো নেই, তাই আমরা সঞ্চয়ের পরিকল্পনা দিতে পারছি না।"},
     "savings_no_room": {
         "en": "Your earlier months show no room to save yet, so we are not suggesting a savings plan.",
         "bn": "আপনার আগের মাসগুলোতে এখনো সঞ্চয়ের মতো বাড়তি টাকা দেখা যায়নি, তাই আমরা সঞ্চয়ের পরিকল্পনা দিচ্ছি না।"},
@@ -156,8 +156,8 @@ _REASON_FACTS = {
                             "এই মাসে এ পর্যন্ত ফি সহ ওয়ালেট থেকে যাওয়া টাকা: {value} টাকা।", 15200),
     "cashout_count_d1_20": ("So far this month you made {value} cash-outs.",
                             "এই মাসে এ পর্যন্ত আপনি {value} বার ক্যাশ আউট করেছেন।", 3),
-    "cashout_amount_d1_20": ("Your cash-outs so far this month: {value} BDT.",
-                             "এই মাসে এ পর্যন্ত আপনার ক্যাশ আউট: {value} টাকা।", 17158),
+    "cashout_amount_d1_20": ("Cash taken out so far this month: {value} BDT.",
+                             "এই মাসে এ পর্যন্ত নগদ তুলেছেন: {value} টাকা।", 17158),
     "days_since_last_inflow": ("Money last came in {value} days ago.",
                                "শেষবার টাকা এসেছে {value} দিন আগে।", 5),
     "days_since_last_inflow_none": ("No money has come in so far this month.",
