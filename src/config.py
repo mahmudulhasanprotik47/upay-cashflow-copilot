@@ -78,3 +78,30 @@ TOP_REASONS = 3  # How many reasons we show with each prediction.
 ALERT_THRESHOLD_OVERRIDE = None  # If set (e.g. 0.4), replaces the learned alert threshold everywhere.
 BOOTSTRAP_RESAMPLES = 200  # Number of user-level bootstrap resamples for confidence intervals.
 MIN_GROUP_ROWS = 150  # Fairness groups with fewer test rows than this are marked LOW SAMPLE.
+
+# ---------------------------------------------------------------------------
+# Phase 3: suggestion rules, messages and API.
+# ---------------------------------------------------------------------------
+RISK_BAND_HIGH_PROB = 0.6  # An alert with a chance at or above this is shown as "High", below it as "Medium".
+BUFFER_ROUND_BDT = 500  # Buffer amounts (and the shown minimum balance) are rounded to this many BDT.
+BUFFER_MIN_BDT = 500  # A suggested buffer is never smaller than this.
+CASHOUT_SAVER_MIN_COUNT = 2  # The cash-out fee tip only appears with at least this many cash-outs on days 1-20.
+CASHOUT_SAVER_EXCLUDE_DAY1 = True  # Leave day-1 cash-outs out of the tip (they are mostly balance sweeps).
+SAVINGS_MAX_MONTHS = 24  # A savings plan never runs longer than this many months.
+USE_BENGALI_DIGITS = True  # Show Bangla messages with Bengali digits.
+WHATIF_MAX_BDT = 500000  # Largest value accepted for a what-if input (and for a savings goal).
+API_HOST = "127.0.0.1"  # The API only listens on this computer.
+API_PORT = 8000  # Port the API listens on.
+CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000",
+                "http://localhost:8000", "http://127.0.0.1:8000"]  # Web pages allowed to call the API.
+BANNED_WORDS_EN = ["hurry", "urgent", "act now", "last chance", "don't miss",
+                   "limited time", "immediately", "panic", "guaranteed"]  # Pressure words never used in messages.
+WHATIF_SAME_TOLERANCE = 0.02  # A what-if risk change smaller than this (internally) is shown as "about the same".
+
+# ---------------------------------------------------------------------------
+# Phase 3 fix: Bangla pressure words, causal words and the buffer rule.
+# ---------------------------------------------------------------------------
+BANNED_WORDS_BN = ["এখনই", "জরুরি", "তাড়াতাড়ি", "অবিলম্বে", "শেষ সুযোগ", "সীমিত সময়"]  # Bangla pressure words never used in messages.
+CAUSAL_WORDS_EN = ["pushes", "helps", "reduces", "causes", "improves"]  # Reasons never claim a cause (English).
+CAUSAL_WORDS_BN = ["বাড়ায়", "বাড়াতে", "কমায়", "কমাতে", "সাহায্য", "কারণে", "উন্নত"]  # Reasons never claim a cause (Bangla).
+BUFFER_DAYS_OF_SPEND = 3  # ASSUMPTION: the suggested buffer is this many days of the user's own average daily spending.

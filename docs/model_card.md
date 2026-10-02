@@ -5,7 +5,7 @@ All data is **simulated**. No real upay user, transaction, balance or fee data w
 ## What it predicts
 At the end of day 20 of a month, the model gives the chance that the user's simulated wallet balance falls below 500 BDT (`SHORTFALL_FLOOR_BDT`) on any day from 21 to 30. If that chance is at or above the alert threshold, the user gets an alert.
 
-A second, helper model predicts the lowest balance on days 21-30 in BDT. It is only used to size a suggested buffer in the app. The alert always comes from the first model.
+A second, helper model predicts the lowest balance on days 21-30 in BDT. It only gives the minimum-balance estimate shown with an alert (and nothing is shown when that estimate is at or above the floor). The alert always comes from the first model. The suggested buffer is a rule, not a model output: `BUFFER_DAYS_OF_SPEND` (3, an ASSUMPTION) days of the user's own average daily spending, capped by the current balance.
 
 ## Features (days 1-20 only)
 | Feature | Meaning |
