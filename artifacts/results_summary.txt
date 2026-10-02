@@ -1,0 +1,81 @@
+Feature rows: 6000 (users x months)
+Month 0: shortfall rate 0.212
+Month 1: shortfall rate 0.201
+Month 2: shortfall rate 0.182
+Month 3: shortfall rate 0.339
+Month 4: shortfall rate 0.248
+Month 5: shortfall rate 0.216
+Day-1 cash-outs (likely sweeps): 318, 2.3% of all cash-out fees
+Leakage test (rebuild without days > 20): PASS, identical
+Split: train months [0, 1, 2, 3] (4000 rows), test months [4, 5] (2000 rows)
+Out-of-fold (2000 rows): model threshold 0.2775 (F1 0.746), rule X 2151 BDT (F1 0.742)
+Test results:
+view1_all: rows 2000, shortfalls 464
+  rule        ROC-AUC 0.843  PR-AUC 0.736  P 0.731  R 0.610  F1 0.665
+  persistence ROC-AUC 0.620  PR-AUC 0.302  P 0.378  R 0.478  F1 0.422
+  model       ROC-AUC 0.853  PR-AUC 0.761  P 0.681  R 0.653  F1 0.667
+  equal volume (387 alerts): rule R 0.610 P 0.731 | model R 0.623 P 0.747
+view2_not_below_day20: rows 1783, shortfalls 259
+  rule        ROC-AUC 0.727  PR-AUC 0.392  P 0.459  R 0.301  F1 0.364
+  persistence ROC-AUC 0.601  PR-AUC 0.187  P 0.240  R 0.436  F1 0.310
+  model       ROC-AUC 0.745  PR-AUC 0.422  P 0.430  R 0.378  F1 0.403
+  equal volume (170 alerts): rule R 0.301 P 0.459 | model R 0.324 P 0.494
+  view1_all counts: shortfalls 464, rule 283, model 303, only model 29, only rule 9
+  view2_not_below_day20 counts: shortfalls 259, rule 78, model 98, only model 29, only rule 9
+Lead time (model-caught shortfalls, n=303): mean 2.05 days, median 1.0 days
+Calibration: Brier score 0.1024
+  bin 0.0-0.1: rows 1111, mean predicted 0.049, actual 0.078
+  bin 0.1-0.2: rows 364, mean predicted 0.134, actual 0.159
+  bin 0.2-0.3: rows 95, mean predicted 0.246, actual 0.210
+  bin 0.3-0.4: rows 47, mean predicted 0.341, actual 0.234
+  bin 0.4-0.5: rows 43, mean predicted 0.449, actual 0.302
+  bin 0.5-0.6: rows 31, mean predicted 0.544, actual 0.355
+  bin 0.6-0.7: rows 22, mean predicted 0.651, actual 0.591
+  bin 0.7-0.8: rows 25, mean predicted 0.756, actual 0.520
+  bin 0.8-0.9: rows 53, mean predicted 0.856, actual 0.774
+  bin 0.9-1.0: rows 209, mean predicted 0.970, actual 0.943
+Bootstrap View 2 PR-AUC, model minus rule: mean +0.031, 95% CI [-0.002, +0.069]
+Bootstrap View 2 recall @ equal volume, model minus rule: mean +0.025, 95% CI [-0.010, +0.061]
+  (200 resamples of users, seeded)
+Sanity 1, shuffled-label model test ROC-AUC: 0.520 (about 0.5 expected)
+Sanity 2, +1000 BDT on balance_day20: risk down 62.6%, up 0.0%, unchanged 37.4% of rows
+Sanity 3, View 2 PR-AUC on 30% unseen users: 0.433 (main model on same users 0.429)
+Min-balance regressor MAE: all 2153 BDT, shortfall rows 2241 BDT
+  naive (min = balance_day20) MAE: all 3040 BDT, shortfall rows 3245 BDT
+SHAP method: shap.TreeExplainer
+  balance_day20            mean |SHAP| 1.7415
+  avg_daily_spend_d1_20    mean |SHAP| 0.3508
+  total_inflow_d1_20       mean |SHAP| 0.3097
+  bill_payments_d1_20      mean |SHAP| 0.2483
+  min_balance_d1_20        mean |SHAP| 0.1726
+  cashout_amount_d1_20     mean |SHAP| 0.1699
+  inflow_vs_prev_month     mean |SHAP| 0.1649
+  days_since_last_inflow   mean |SHAP| 0.1348
+  total_outflow_d1_20      mean |SHAP| 0.1088
+  cashout_count_d1_20      mean |SHAP| 0.0585
+  prev_month_shortfall     mean |SHAP| 0.0181
+Fairness (test months, model alerts):
+  income_band=high: rows 358, shortfall 0.209, alert 0.218, recall 0.613, FPR 0.113
+  income_band=low: rows 866, shortfall 0.244, alert 0.237, recall 0.663, FPR 0.099
+  income_band=mid: rows 776, shortfall 0.229, alert 0.209, recall 0.657, FPR 0.075
+  income_band: largest recall gap 0.050, largest FPR gap 0.038
+  region=Chattogram: rows 360, shortfall 0.231, alert 0.231, recall 0.651, FPR 0.105
+  region=Dhaka: rows 710, shortfall 0.215, alert 0.213, recall 0.640, FPR 0.095
+  region=Khulna: rows 320, shortfall 0.231, alert 0.219, recall 0.703, FPR 0.073
+  region=Rajshahi: rows 320, shortfall 0.259, alert 0.237, recall 0.615, FPR 0.105
+  region=Sylhet: rows 290, shortfall 0.245, alert 0.224, recall 0.676, FPR 0.078
+  region: largest recall gap 0.088, largest FPR gap 0.032
+  age_band=18-25: rows 486, shortfall 0.247, alert 0.212, recall 0.617, FPR 0.079
+  age_band=26-35: rows 702, shortfall 0.232, alert 0.208, recall 0.638, FPR 0.078
+  age_band=36-50: rows 572, shortfall 0.234, alert 0.250, recall 0.664, FPR 0.123
+  age_band=51+: rows 240, shortfall 0.196, alert 0.221, recall 0.766, FPR 0.088
+  age_band: largest recall gap 0.149, largest FPR gap 0.045
+Determinism: two runs give byte-identical metrics.json: True
+Artifact sizes:
+  liquidity_model.json: 531.8 KB
+  min_balance_model.json: 544.3 KB
+  threshold.json: 0.4 KB
+  metrics.json: 3.6 KB
+  fairness.json: 2.7 KB
+  shap_global.json: 0.4 KB
+  test_predictions.csv: 48.6 KB

@@ -1,0 +1,18 @@
+{
+  "alert_threshold_override": null,
+  "features": [
+    "balance_day20",
+    "min_balance_d1_20",
+    "avg_daily_spend_d1_20",
+    "total_inflow_d1_20",
+    "total_outflow_d1_20",
+    "cashout_count_d1_20",
+    "cashout_amount_d1_20",
+    "days_since_last_inflow",
+    "bill_payments_d1_20",
+    "prev_month_shortfall",
+    "inflow_vs_prev_month"
+  ],
+  "learned_threshold": 0.277504026889801,
+  "rule_x_bdt": 2151.0
+}

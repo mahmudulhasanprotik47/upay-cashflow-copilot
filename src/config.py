@@ -67,3 +67,14 @@ FAMILY_EMERGENCY_SHARE = 0.50  # Size of an emergency send, as a share of monthl
 FESTIVAL_MONTH_INDEX = 3  # Which simulated month (0-based) is the festival month.
 FESTIVAL_FAMILY_MULT = 2.0  # Family sends are multiplied by this in the festival month.
 FESTIVAL_SHOPPING_MULT = 1.4  # Merchant spending is multiplied by this in the festival month.
+
+# ---------------------------------------------------------------------------
+# Phase 2: model settings. Fixed in advance, never tuned on the test months.
+# ---------------------------------------------------------------------------
+MODEL_N_ESTIMATORS = 300  # Number of trees in each XGBoost model.
+MODEL_MAX_DEPTH = 4  # Maximum depth of each tree.
+MODEL_LEARNING_RATE = 0.05  # How much each new tree corrects the previous ones.
+TOP_REASONS = 3  # How many reasons we show with each prediction.
+ALERT_THRESHOLD_OVERRIDE = None  # If set (e.g. 0.4), replaces the learned alert threshold everywhere.
+BOOTSTRAP_RESAMPLES = 200  # Number of user-level bootstrap resamples for confidence intervals.
+MIN_GROUP_ROWS = 150  # Fairness groups with fewer test rows than this are marked LOW SAMPLE.

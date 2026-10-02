@@ -1,0 +1,16 @@
+{
+  "mean_abs_shap": {
+    "avg_daily_spend_d1_20": 0.3508,
+    "balance_day20": 1.7415,
+    "bill_payments_d1_20": 0.2483,
+    "cashout_amount_d1_20": 0.1699,
+    "cashout_count_d1_20": 0.0585,
+    "days_since_last_inflow": 0.1348,
+    "inflow_vs_prev_month": 0.1649,
+    "min_balance_d1_20": 0.1726,
+    "prev_month_shortfall": 0.0181,
+    "total_inflow_d1_20": 0.3097,
+    "total_outflow_d1_20": 0.1088
+  },
+  "method": "shap.TreeExplainer"
+}

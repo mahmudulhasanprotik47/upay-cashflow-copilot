@@ -1,0 +1,122 @@
+{
+  "age_band": {
+    "groups": {
+      "18-25": {
+        "alert_rate": 0.2119,
+        "fpr": 0.0792,
+        "low_sample": false,
+        "recall": 0.6167,
+        "rows": 486,
+        "shortfall_rate": 0.2469
+      },
+      "26-35": {
+        "alert_rate": 0.208,
+        "fpr": 0.0779,
+        "low_sample": false,
+        "recall": 0.638,
+        "rows": 702,
+        "shortfall_rate": 0.2322
+      },
+      "36-50": {
+        "alert_rate": 0.25,
+        "fpr": 0.1233,
+        "low_sample": false,
+        "recall": 0.6642,
+        "rows": 572,
+        "shortfall_rate": 0.2343
+      },
+      "51+": {
+        "alert_rate": 0.2208,
+        "fpr": 0.0881,
+        "low_sample": false,
+        "recall": 0.766,
+        "rows": 240,
+        "shortfall_rate": 0.1958
+      }
+    },
+    "largest_gaps": {
+      "fpr": 0.0454,
+      "recall": 0.1493
+    }
+  },
+  "income_band": {
+    "groups": {
+      "high": {
+        "alert_rate": 0.2179,
+        "fpr": 0.1131,
+        "low_sample": false,
+        "recall": 0.6133,
+        "rows": 358,
+        "shortfall_rate": 0.2095
+      },
+      "low": {
+        "alert_rate": 0.2367,
+        "fpr": 0.0992,
+        "low_sample": false,
+        "recall": 0.6635,
+        "rows": 866,
+        "shortfall_rate": 0.2436
+      },
+      "mid": {
+        "alert_rate": 0.2088,
+        "fpr": 0.0753,
+        "low_sample": false,
+        "recall": 0.6573,
+        "rows": 776,
+        "shortfall_rate": 0.2294
+      }
+    },
+    "largest_gaps": {
+      "fpr": 0.0378,
+      "recall": 0.0502
+    }
+  },
+  "region": {
+    "groups": {
+      "Chattogram": {
+        "alert_rate": 0.2306,
+        "fpr": 0.1047,
+        "low_sample": false,
+        "recall": 0.6506,
+        "rows": 360,
+        "shortfall_rate": 0.2306
+      },
+      "Dhaka": {
+        "alert_rate": 0.2127,
+        "fpr": 0.0952,
+        "low_sample": false,
+        "recall": 0.6405,
+        "rows": 710,
+        "shortfall_rate": 0.2155
+      },
+      "Khulna": {
+        "alert_rate": 0.2188,
+        "fpr": 0.0732,
+        "low_sample": false,
+        "recall": 0.7027,
+        "rows": 320,
+        "shortfall_rate": 0.2313
+      },
+      "Rajshahi": {
+        "alert_rate": 0.2375,
+        "fpr": 0.1055,
+        "low_sample": false,
+        "recall": 0.6145,
+        "rows": 320,
+        "shortfall_rate": 0.2594
+      },
+      "Sylhet": {
+        "alert_rate": 0.2241,
+        "fpr": 0.0776,
+        "low_sample": false,
+        "recall": 0.6761,
+        "rows": 290,
+        "shortfall_rate": 0.2448
+      }
+    },
+    "largest_gaps": {
+      "fpr": 0.0323,
+      "recall": 0.0882
+    }
+  }
+}
