@@ -2,12 +2,13 @@
 # Run: python -m uvicorn src.api.main:app --host 127.0.0.1 --port 8000
 
 from contextlib import asynccontextmanager  # Start-up hook.
+from pathlib import Path as FilePath  # Location of the wallet page on disk.
 from typing import Annotated, Literal  # Input types for validation.
 
 from fastapi import FastAPI, Path, Query, Request  # Web framework.
 from fastapi.exceptions import RequestValidationError  # Raised when input fails validation.
 from fastapi.middleware.cors import CORSMiddleware  # Lets the allowed web pages call the API.
-from fastapi.responses import JSONResponse  # Error responses.
+from fastapi.responses import FileResponse, JSONResponse  # The wallet page; error responses.
 from pydantic import BaseModel, ConfigDict, Field  # Request body checks.
 from starlette.exceptions import HTTPException as StarletteHTTPException  # 404/405 for unknown routes.
 
@@ -88,6 +89,12 @@ class WhatIfRequest(BaseModel):
     month: int = Field(ge=0, le=cfg.N_MONTHS - 1)
     overrides: dict[str, object] = Field(min_length=1, max_length=len(service.FEATURES))
     lang: Literal["en", "bn"] = "en"
+
+
+@app.get("/", include_in_schema=False)
+def wallet_page():
+    """The wallet screen: one self-contained HTML file, hidden from the API docs."""
+    return FileResponse(FilePath(__file__).resolve().parents[2] / "frontend" / "index.html", media_type="text/html")
 
 
 @app.get("/health")

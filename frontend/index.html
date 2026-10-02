@@ -1,0 +1,508 @@
+<!doctype html>
+<!-- upay Smart Cash-Flow Copilot: the wallet screen. One self-contained file, all data simulated. -->
+<html lang="en">
+<head>
+  <!-- SECTION: page setup (character set, phone scaling, tab title) -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>upay Smart Cash-Flow Copilot</title>
+
+  <style>
+    /* SECTION: design settings. Change colours, corner radius or font here and the whole page follows. */
+    :root {
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, "Nirmala UI", "Noto Sans Bengali", "Vrinda", sans-serif;
+      --radius: 14px;              /* Corner rounding of cards. */
+      --radius-small: 999px;       /* Pill shape for chips and tags. */
+      --page-bg: #eef2f5;          /* Area around the phone column. */
+      --card-bg: #ffffff;          /* Card background. */
+      --text: #1b2733;             /* Main text. */
+      --text-soft: #4a5866;        /* Secondary text (still good contrast). */
+      --line: #d7dee5;             /* Thin borders. */
+      --brand: #0b5c8a;            /* Title bar and main accents. */
+      --brand-text: #ffffff;       /* Text on the title bar. */
+      --focus: #f2b705;            /* Keyboard focus ring. */
+      --low-bg: #dcf2e3;  --low-text: #165c34;      /* Low risk: calm green. */
+      --medium-bg: #fcecc6; --medium-text: #6b4a00; /* Medium risk: amber. */
+      --high-bg: #fbdac4; --high-text: #8a3300;     /* High risk: deep orange, never alarming red. */
+      --chart-line: #0b5c8a;       /* Balance line on the chart. */
+      --chart-floor: #8a3300;      /* Dashed floor line. */
+      --chart-unknown: #e6eaee;    /* Shaded "not known yet" area. */
+      --note-bg: #f4f6f8;          /* Background of notes. */
+      --tag-bg: #e8eef3;           /* "Suggestion only" tag. */
+    }
+
+    /* SECTION: base page. Phone-width column, centred on desktop, full width on phones. */
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--page-bg); color: var(--text);
+      font-family: var(--font); font-size: 16px; line-height: 1.5;
+    }
+    .app { max-width: 420px; margin: 0 auto; min-height: 100vh; background: var(--page-bg); }
+
+    /* SECTION: keyboard focus. Always visible when moving with the Tab key. */
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    /* SECTION: top bar (title, simulated-data badge, language toggle). */
+    .topbar { background: var(--brand); color: var(--brand-text); padding: 16px; }
+    .topbar h1 { margin: 0 0 8px; font-size: 1.25rem; line-height: 1.3; }
+    .topbar-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .badge {
+      font-size: 0.8125rem; padding: 2px 10px; border-radius: var(--radius-small);
+      border: 1px solid var(--brand-text);
+    }
+    .lang-toggle { display: flex; border: 1px solid var(--brand-text); border-radius: var(--radius-small); overflow: hidden; }
+    .lang-toggle button {
+      font: inherit; font-size: 0.9375rem; padding: 4px 12px; min-height: 36px;
+      background: transparent; color: var(--brand-text); border: 0; cursor: pointer;
+    }
+    .lang-toggle button[aria-pressed="true"] { background: var(--brand-text); color: var(--brand); font-weight: 600; }
+
+    /* SECTION: controls (user and month dropdowns). */
+    .controls { display: flex; gap: 12px; padding: 16px; }
+    .controls label { flex: 1; display: flex; flex-direction: column; font-size: 0.875rem; color: var(--text-soft); }
+    .controls select {
+      font: inherit; font-size: 1rem; color: var(--text); margin-top: 4px; padding: 8px;
+      min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-bg);
+    }
+
+    /* SECTION: status line (loading and error messages). */
+    .status { margin: 0 16px 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--card-bg); }
+    .status.error { background: var(--high-bg); color: var(--high-text); }
+    .status:empty { display: none; }
+
+    /* SECTION: cards (shared look for every card on the page). */
+    .cards { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+    .card h2 { margin: 0 0 8px; font-size: 1.0625rem; }
+    .card p { margin: 0; }
+    .soft { color: var(--text-soft); font-size: 0.9375rem; }
+
+    /* SECTION: risk card (big band chip). */
+    .chip {
+      display: inline-block; font-size: 1.25rem; font-weight: 700; padding: 6px 18px;
+      border-radius: var(--radius-small); margin-bottom: 10px;
+    }
+    .chip.low { background: var(--low-bg); color: var(--low-text); }
+    .chip.medium { background: var(--medium-bg); color: var(--medium-text); }
+    .chip.high { background: var(--high-bg); color: var(--high-text); }
+
+    /* SECTION: balance chart. */
+    .chart svg { width: 100%; height: auto; display: block; }
+    .chart .axis-text { font-size: 12px; fill: var(--text-soft); font-family: var(--font); }
+    .chart .floor-text { font-size: 12px; fill: var(--chart-floor); font-family: var(--font); }
+
+    /* SECTION: reasons list (neutral arrows, no good/bad colours). */
+    .reasons { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+    .reasons li { display: flex; gap: 10px; align-items: flex-start; }
+    .arrow {
+      flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line);
+      display: flex; align-items: center; justify-content: center; color: var(--text-soft); font-weight: 700;
+    }
+
+    /* SECTION: suggestions and notes. */
+    .tag {
+      display: inline-block; font-size: 0.8125rem; padding: 2px 10px; margin-bottom: 8px;
+      border-radius: var(--radius-small); background: var(--tag-bg); color: var(--text-soft);
+    }
+    .big-amount { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 6px; }
+    .fee-label { margin-top: 8px; font-size: 0.875rem; color: var(--text-soft); font-style: italic; }
+    .note { background: var(--note-bg); }
+    .note.clear { background: var(--card-bg); border: 2px solid var(--brand); }
+
+    /* SECTION: footer (disclaimer and training-month banner). */
+    .footer { padding: 0 16px 24px; }
+    .training { margin: 0 0 10px; padding: 10px 14px; border-radius: var(--radius); background: var(--medium-bg); color: var(--medium-text); font-size: 0.9375rem; }
+    .disclaimer { margin: 0; font-size: 0.9375rem; color: var(--text-soft); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SECTION: top bar. Title, permanent "Simulated data" badge, EN | বাংলা toggle. -->
+    <header class="topbar">
+      <h1 data-s="title"></h1>
+      <div class="topbar-row">
+        <span class="badge" data-s="simulated"></span>
+        <div class="lang-toggle" role="group" id="lang-group">
+          <button type="button" id="lang-en" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" id="lang-bn" data-lang="bn" aria-pressed="false" lang="bn">বাংলা</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- SECTION: controls. User and month dropdowns. -->
+    <div class="controls">
+      <label><span data-s="userLabel"></span><select id="user-select"></select></label>
+      <label><span data-s="monthLabel"></span><select id="month-select"></select></label>
+    </div>
+
+    <!-- SECTION: status. Loading and error messages, read aloud by screen readers. -->
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+
+    <main class="cards" id="cards" hidden>
+      <!-- SECTION: risk card. Band chip and the API's sentence. Never a probability or percentage. -->
+      <section class="card" aria-labelledby="risk-title">
+        <h2 id="risk-title" data-s="riskTitle"></h2>
+        <span class="chip" id="risk-chip"></span>
+        <p id="risk-text"></p>
+        <!-- SECTION: estimated minimum balance. Only shown when the API sends it. -->
+        <p class="soft" id="min-balance" hidden></p>
+      </section>
+
+      <!-- SECTION: balance chart. Filled in by the chart code below. -->
+      <section class="card chart" aria-labelledby="chart-title">
+        <h2 id="chart-title" data-s="chartTitle"></h2>
+        <div id="chart"></div>
+      </section>
+
+      <!-- SECTION: reasons. What the model looked at, with neutral arrows. -->
+      <section class="card" aria-labelledby="reasons-title">
+        <h2 id="reasons-title" data-s="reasonsTitle"></h2>
+        <p class="soft" data-s="reasonsLabel"></p>
+        <ul class="reasons" id="reasons"></ul>
+      </section>
+
+      <!-- SECTION: suggestions and notes. Cards are added by the code below. -->
+      <section aria-labelledby="sugg-title" id="sugg-section">
+        <h2 id="sugg-title" class="soft" data-s="suggTitle" style="margin:4px 0 8px;font-size:1rem"></h2>
+        <div class="cards" id="suggestions" style="padding:0"></div>
+      </section>
+    </main>
+
+    <!-- SECTION: footer. Training-month banner and the API's disclaimer. -->
+    <footer class="footer" id="footer" hidden>
+      <p class="training" id="training" data-s="trainingBanner" hidden></p>
+      <p class="disclaimer" id="disclaimer"></p>
+    </footer>
+  </div>
+
+  <script>
+    "use strict";
+
+    // SECTION: STRINGS. Every piece of text that does not come from the API, in English and Bangla.
+    // Functions receive numbers that are already formatted for the language.
+    const STRINGS = {
+      en: {
+        title: "upay Smart Cash-Flow Copilot",
+        simulated: "Simulated data",
+        langGroup: "Language",
+        userLabel: "User",
+        monthLabel: "Month",
+        userN: (n) => "User " + n,
+        monthN: (n) => "Month " + n,
+        trainingMonth: "training month",
+        loading: "Loading…",
+        errorFallback: "Something went wrong. Please try again.",
+        riskTitle: "Risk for the rest of this month",
+        band: { low: "Low risk", medium: "Medium risk", high: "High risk" },
+        minBalance: (x, y) => "Estimated lowest balance in days 21-30: about " + x + " (typically off by about " + y + ")",
+        chartTitle: "Your balance, days 1-20",
+        notKnown: "Not known yet",
+        floor: (f) => "Floor " + f,
+        day: (d) => "Day " + d,
+        chartAlt: (bal, floor) => "Line chart of your balance on days 1 to 20. Balance on day 20: " + bal +
+          ". Floor: " + floor + ". Days 21 to 30 are not known yet.",
+        reasonsTitle: "What the model looked at",
+        reasonsLabel: "Patterns in simulated data, not causes",
+        up: "Goes with higher risk",
+        down: "Goes with lower risk",
+        suggTitle: "Suggestions and notes",
+        tag: "Suggestion only, you decide",
+        bufferTitle: "Keep a buffer",
+        cashoutTitle: "Save on cash-out fees",
+        noBufferTitle: "Balance too low for a buffer",
+        trainingBanner: "This month was used to train the model. Use months 4-5 for demos."
+      },
+      bn: {
+        title: "upay স্মার্ট ক্যাশ-ফ্লো কোপাইলট",
+        simulated: "সিমুলেটেড ডেটা",
+        langGroup: "ভাষা",
+        userLabel: "ব্যবহারকারী",
+        monthLabel: "মাস",
+        userN: (n) => "ব্যবহারকারী " + n,
+        monthN: (n) => "মাস " + n,
+        trainingMonth: "প্রশিক্ষণের মাস",
+        loading: "লোড হচ্ছে…",
+        errorFallback: "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।",
+        riskTitle: "এই মাসের বাকি সময়ের ঝুঁকি",
+        band: { low: "কম ঝুঁকি", medium: "মাঝারি ঝুঁকি", high: "উচ্চ ঝুঁকি" },
+        minBalance: (x, y) => "২১-৩০ দিনে আনুমানিক সর্বনিম্ন ব্যালেন্স: প্রায় " + x + " (সাধারণত প্রায় " + y + " কমবেশি হতে পারে)",
+        chartTitle: "আপনার ব্যালেন্স, ১-২০ দিন",
+        notKnown: "এখনো জানা নেই",
+        floor: (f) => "সর্বনিম্ন সীমা " + f,
+        day: (d) => "দিন " + d,
+        chartAlt: (bal, floor) => "১ থেকে ২০ দিনের ব্যালেন্সের রেখাচিত্র। ২০তম দিনের ব্যালেন্স: " + bal +
+          "। সর্বনিম্ন সীমা: " + floor + "। ২১ থেকে ৩০ দিন এখনো জানা নেই।",
+        reasonsTitle: "মডেল যা দেখেছে",
+        reasonsLabel: "সিমুলেটেড ডেটার প্যাটার্ন, কারণ নয়",
+        up: "বেশি ঝুঁকির সাথে দেখা যায়",
+        down: "কম ঝুঁকির সাথে দেখা যায়",
+        suggTitle: "পরামর্শ ও নোট",
+        tag: "শুধু পরামর্শ, সিদ্ধান্ত আপনার",
+        bufferTitle: "একটি বাফার রাখুন",
+        cashoutTitle: "ক্যাশ-আউট ফি বাঁচান",
+        noBufferTitle: "বাফারের জন্য ব্যালেন্স খুব কম",
+        trainingBanner: "এই মাসটি মডেল প্রশিক্ষণে ব্যবহৃত হয়েছে। ডেমোর জন্য ৪-৫ মাস ব্যবহার করুন।"
+      }
+    };
+
+    // SECTION: page state. Current language, month order, and a counter to ignore late (stale) answers.
+    const MONTH_ORDER = [4, 5, 0, 1, 2, 3];   // Demo months first, then training months.
+    const TRAINING_MONTHS = [0, 1, 2, 3];
+    let lang = "en";
+    let requestCounter = 0;
+    let lastForecast = null;                  // Kept so the chart text can be redrawn without a new request.
+
+    // SECTION: small helpers. Look up an element, make an element with text, format numbers.
+    const $ = (id) => document.getElementById(id);
+    const S = () => STRINGS[lang];
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined) node.textContent = text;   // textContent only: API text is never treated as HTML.
+      return node;
+    }
+    // Formats a number exactly as given (no rounding of whole numbers) in Bangla or English digits.
+    function num(n) {
+      return new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US", { maximumFractionDigits: 20 }).format(n);
+    }
+    const taka = (n) => "৳" + num(n);
+
+    // SECTION: status messages (loading, error, clear).
+    function showStatus(text, isError) {
+      $("status").textContent = text;
+      $("status").classList.toggle("error", !!isError);
+    }
+    // Builds a short friendly message from the API's error JSON; never shows raw text.
+    async function errorMessage(response) {
+      try {
+        const body = await response.json();
+        const msg = lang === "bn" ? body.error_bn : body.error;
+        if (typeof msg === "string" && msg) return msg;
+      } catch (_ignored) { /* Not JSON: fall through to the generic message. */ }
+      return S().errorFallback;
+    }
+
+    // SECTION: fixed labels. Fills every element marked data-s="key" from STRINGS.
+    function applyStrings() {
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-s]").forEach((node) => { node.textContent = S()[node.dataset.s]; });
+      $("lang-group").setAttribute("aria-label", S().langGroup);
+      $("lang-en").setAttribute("aria-pressed", String(lang === "en"));
+      $("lang-bn").setAttribute("aria-pressed", String(lang === "bn"));
+      // Relabel dropdown options in the chosen language (values stay the same).
+      for (const opt of $("user-select").options) opt.textContent = S().userN(num(Number(opt.value)));
+      for (const opt of $("month-select").options) {
+        const m = Number(opt.value);
+        opt.textContent = S().monthN(num(m)) + (TRAINING_MONTHS.includes(m) ? " (" + S().trainingMonth + ")" : "");
+      }
+    }
+
+    // SECTION: month dropdown. Months 4 and 5 first, then 0-3.
+    function buildMonths() {
+      for (const m of MONTH_ORDER) {
+        const opt = document.createElement("option");
+        opt.value = String(m);
+        $("month-select").appendChild(opt);
+      }
+      $("month-select").value = "4";
+    }
+
+    // SECTION: user dropdown. Filled from GET /users; first user is the default.
+    async function loadUsers() {
+      showStatus(S().loading);
+      try {
+        const response = await fetch("/users");
+        if (!response.ok) { showStatus(await errorMessage(response), true); return false; }
+        const users = await response.json();
+        for (const u of users) {
+          const opt = document.createElement("option");
+          opt.value = String(u.user_id);
+          $("user-select").appendChild(opt);
+        }
+        if (users.length) return true;
+      } catch (_e) { /* Network or format problem: show the generic message below. */ }
+      showStatus(S().errorFallback, true);
+      return false;
+    }
+
+    // SECTION: forecast request. Only the newest request may update the page.
+    async function loadForecast() {
+      const myRequest = ++requestCounter;
+      const userId = $("user-select").value;
+      const month = $("month-select").value;
+      showStatus(S().loading);
+      $("cards").setAttribute("aria-busy", "true");
+      try {
+        const response = await fetch("/users/" + encodeURIComponent(userId) + "/months/" +
+          encodeURIComponent(month) + "/forecast?lang=" + lang);
+        if (myRequest !== requestCounter) return;               // A newer request has started: ignore this one.
+        if (!response.ok) {
+          const msg = await errorMessage(response);
+          if (myRequest !== requestCounter) return;
+          showStatus(msg, true);
+          $("cards").hidden = true; $("footer").hidden = true;
+          return;
+        }
+        const data = await response.json();
+        if (myRequest !== requestCounter) return;
+        lastForecast = data;
+        render(data);
+        showStatus("");
+      } catch (_e) {
+        if (myRequest !== requestCounter) return;
+        showStatus(S().errorFallback, true);
+        $("cards").hidden = true; $("footer").hidden = true;
+      } finally {
+        if (myRequest === requestCounter) $("cards").removeAttribute("aria-busy");
+      }
+    }
+
+    // SECTION: render. Puts one forecast on the page. Shows numbers exactly as the API sent them.
+    function render(d) {
+      renderRisk(d);
+      renderChart(d);
+      renderReasons(d);
+      renderSuggestions(d);
+      $("training").hidden = !d.month_in_training;
+      $("disclaimer").textContent = d.disclaimer;
+      $("cards").hidden = false;
+      $("footer").hidden = false;
+    }
+
+    // SECTION: risk card. Band chip, the API's sentence, and the estimated minimum when present.
+    function renderRisk(d) {
+      const chip = $("risk-chip");
+      chip.className = "chip " + d.risk_band;
+      chip.textContent = S().band[d.risk_band] || d.risk_band;
+      $("risk-text").textContent = d.risk_band_text;
+      const min = d.predicted_min_balance;
+      $("min-balance").hidden = !min;
+      if (min) $("min-balance").textContent = S().minBalance(taka(min.amount_bdt), taka(min.typical_error_bdt));
+    }
+
+    // SECTION: chart. Inline SVG: balance line days 1-20, dashed floor, shaded days 21-30, axis labels.
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    function svg(tag, attrs, text) {
+      const node = document.createElementNS(SVG_NS, tag);
+      for (const k in attrs) node.setAttribute(k, attrs[k]);
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function renderChart(d) {
+      const W = 360, H = 210, L = 8, R = 8, T = 16, B = 26;    // Size and margins in drawing units.
+      const points = d.balance_by_day || [];
+      const values = points.map((p) => p.balance_bdt).concat([d.floor_bdt]);
+      const top = Math.max(...values, 1) * 1.15;                // Headroom above the highest value (drawing only).
+      const bottom = Math.min(0, ...values);
+      const x = (day) => L + (day - 1) / 29 * (W - L - R);
+      const y = (v) => T + (top - v) / (top - bottom) * (H - T - B);
+
+      const day20 = points.find((p) => p.day === 20);
+      const root = svg("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-labelledby": "chart-alt-t chart-alt-d" });
+      root.appendChild(svg("title", { id: "chart-alt-t" }, S().chartTitle));
+      root.appendChild(svg("desc", { id: "chart-alt-d" },
+        S().chartAlt(day20 ? taka(day20.balance_bdt) : "-", taka(d.floor_bdt))));
+
+      // Shaded area for days 21-30 with its label.
+      root.appendChild(svg("rect", { x: x(20), y: T, width: x(30) - x(20), height: H - T - B, fill: "var(--chart-unknown)" }));
+      root.appendChild(svg("text", { x: (x(20) + x(30)) / 2, y: T + 18, "text-anchor": "middle", class: "axis-text" }, S().notKnown));
+
+      // Dashed floor line with its label.
+      root.appendChild(svg("line", { x1: L, x2: W - R, y1: y(d.floor_bdt), y2: y(d.floor_bdt),
+        stroke: "var(--chart-floor)", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
+      root.appendChild(svg("text", { x: L + 2, y: y(d.floor_bdt) - 5, class: "floor-text" }, S().floor(taka(d.floor_bdt))));
+
+      // Balance line for days 1-20, with a dot on the last day.
+      if (points.length) {
+        root.appendChild(svg("polyline", { points: points.map((p) => x(p.day) + "," + y(p.balance_bdt)).join(" "),
+          fill: "none", stroke: "var(--chart-line)", "stroke-width": 2.5, "stroke-linejoin": "round" }));
+        const last = points[points.length - 1];
+        root.appendChild(svg("circle", { cx: x(last.day), cy: y(last.balance_bdt), r: 4, fill: "var(--chart-line)" }));
+      }
+
+      // Baseline and day labels at 1, 10 and 20.
+      root.appendChild(svg("line", { x1: L, x2: W - R, y1: H - B, y2: H - B, stroke: "var(--line)" }));
+      for (const day of [1, 10, 20]) {
+        const anchor = day === 1 ? "start" : "middle";
+        root.appendChild(svg("text", { x: x(day), y: H - 8, "text-anchor": anchor, class: "axis-text" }, S().day(num(day))));
+      }
+      $("chart").replaceChildren(root);
+    }
+
+    // SECTION: reasons. API text with a neutral up or down arrow.
+    function renderReasons(d) {
+      const list = $("reasons");
+      list.replaceChildren();
+      for (const r of d.reasons || []) {
+        const li = el("li");
+        const arrow = el("span", "arrow", r.direction === "up" ? "↑" : "↓");
+        arrow.setAttribute("role", "img");
+        arrow.setAttribute("aria-label", r.direction === "up" ? S().up : S().down);
+        li.append(arrow, el("span", "", r.text));
+        list.appendChild(li);
+      }
+    }
+
+    // SECTION: suggestions and notes. Buffer, cash-out saver, then the notes, in that order.
+    function renderSuggestions(d) {
+      const box = $("suggestions");
+      box.replaceChildren();
+      const sugg = (type) => (d.suggestions || []).find((s) => s.type === type);
+      const note = (type) => (d.notes || []).find((n) => n.type === type);
+
+      // Buffer card: big amount, then its text.
+      const buffer = sugg("buffer");
+      if (buffer) {
+        const card = el("div", "card");
+        card.append(el("span", "tag", S().tag), el("h2", "", S().bufferTitle),
+          el("div", "big-amount", taka(buffer.amount_bdt)), el("p", "", buffer.text));
+        box.appendChild(card);
+      }
+      // Cash-out saver card: its text plus the placeholder fee-rate label, always visible.
+      const cashout = sugg("cashout_saver");
+      if (cashout) {
+        const card = el("div", "card");
+        card.append(el("span", "tag", S().tag), el("h2", "", S().cashoutTitle),
+          el("p", "", cashout.text), el("p", "fee-label", cashout.fee_rate_label));
+        box.appendChild(card);
+      }
+      // Notes: shortfall warning and savings-blocked alert.
+      for (const type of ["shortfall_warning", "savings_blocked_alert"]) {
+        const n = note(type);
+        if (n) { const card = el("div", "card note"); card.appendChild(el("p", "", n.text)); box.appendChild(card); }
+      }
+      // Clear card when there is an alert but no buffer.
+      const noBuffer = note("no_buffer_low_balance");
+      if (d.alert && !buffer && noBuffer) {
+        const card = el("div", "card note clear");
+        card.append(el("h2", "", S().noBufferTitle), el("p", "", noBuffer.text));
+        box.appendChild(card);
+      }
+      $("sugg-section").hidden = box.children.length === 0;
+    }
+
+    // SECTION: events. Dropdowns reload the forecast; the language toggle relabels and re-fetches.
+    $("user-select").addEventListener("change", loadForecast);
+    $("month-select").addEventListener("change", loadForecast);
+    document.querySelectorAll(".lang-toggle button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.lang === lang) return;
+        lang = btn.dataset.lang;
+        applyStrings();
+        if (lastForecast) renderChart(lastForecast);   // Chart labels follow the language at once.
+        loadForecast();
+      });
+    });
+
+    // SECTION: start-up. Build the month list, label everything, load users, then the first forecast.
+    (async function start() {
+      buildMonths();
+      applyStrings();
+      if (await loadUsers()) {
+        applyStrings();
+        loadForecast();
+      }
+    })();
+  </script>
+</body>
+</html>
