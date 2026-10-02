@@ -941,6 +941,8 @@ Allowed keys (the 11 model inputs only): `balance_day20`, `min_balance_d1_20`, `
 
 Value rules: a JSON number, finite, not negative, at most 500000. `days_since_last_inflow` at most 20.
 `prev_month_shortfall` 0 or 1. Counts and days must be whole numbers.
+`inflow_vs_prev_month` is a ratio: days 1-20 inflow divided by last month's full inflow (1 = as much as last month's
+total; source: `docs/model_card.md`). Reasons show it as a percentage.
 
 ### English
 

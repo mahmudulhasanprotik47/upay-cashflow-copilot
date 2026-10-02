@@ -65,6 +65,16 @@
       min-height: 44px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-bg);
     }
 
+    /* SECTION: demo personas ("Try a demo case" buttons). Wraps on phones; 44px tap targets. */
+    .personas { padding: 0 16px 8px; }
+    .personas h2 { font-size: 0.875rem; font-weight: normal; color: var(--text-soft); margin: 0 0 6px; }
+    .persona-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .persona-row button {
+      font: inherit; font-size: 0.875rem; color: var(--text); min-height: 44px; max-width: 100%; padding: 8px 12px;
+      border: 1px solid var(--line); border-radius: 8px; background: var(--card-bg); cursor: pointer;
+    }
+    .persona-row button[aria-pressed="true"] { background: var(--brand); color: var(--brand-text); border-color: var(--brand); font-weight: 600; }
+
     /* SECTION: status line (loading and error messages). */
     .status { margin: 0 16px 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--card-bg); }
     .status.error { background: var(--high-bg); color: var(--high-text); }
@@ -201,6 +211,19 @@
       <label><span data-s="monthLabel"></span><select id="month-select"></select></label>
     </div>
 
+    <!-- SECTION: demo personas. Each button sets the dropdowns to a scanned user-month. -->
+    <div class="personas" role="group" aria-labelledby="persona-title">
+      <h2 id="persona-title" data-s="demoTitle"></h2>
+      <div class="persona-row">
+        <button type="button" data-persona="0" data-s="persona0" aria-pressed="false"></button>
+        <button type="button" data-persona="1" data-s="persona1" aria-pressed="false"></button>
+        <button type="button" data-persona="2" data-s="persona2" aria-pressed="false"></button>
+        <button type="button" data-persona="3" data-s="persona3" aria-pressed="false"></button>
+        <button type="button" data-persona="4" data-s="persona4" aria-pressed="false"></button>
+        <button type="button" data-persona="5" data-s="persona5" aria-pressed="false"></button>
+      </div>
+    </div>
+
     <!-- SECTION: status. Loading and error messages, read aloud by screen readers. -->
     <p class="status" id="status" role="status" aria-live="polite"></p>
 
@@ -313,6 +336,13 @@
         langGroup: "Language",
         userLabel: "User",
         monthLabel: "Month",
+        demoTitle: "Try a demo case",
+        persona0: "Alert, capped buffer",
+        persona1: "Alert, full buffer",
+        persona2: "Low risk",
+        persona3: "Savings plan works",
+        persona4: "No history yet",
+        persona5: "Alert, no buffer",
         userN: (n) => "User " + n,
         monthN: (n) => "Month " + n,
         monthTest: "test",
@@ -373,7 +403,7 @@
           days_since_last_inflow: "Days since money last came in (0-20)",
           bill_payments_d1_20: "Number of bill payments",
           prev_month_shortfall: "Ran short last month (0 = no, 1 = yes)",
-          inflow_vs_prev_month: "Money received compared with last month"
+          inflow_vs_prev_month: "Money received so far vs all of last month (ratio; 1 = as much as last month's total)"
         }
       },
       bn: {
@@ -384,6 +414,13 @@
         langGroup: "ভাষা",
         userLabel: "ব্যবহারকারী",
         monthLabel: "মাস",
+        demoTitle: "একটি ডেমো দেখুন",
+        persona0: "সতর্কতা, সীমিত বাফার",
+        persona1: "সতর্কতা, পূর্ণ বাফার",
+        persona2: "কম ঝুঁকি",
+        persona3: "সঞ্চয় পরিকল্পনা সম্ভব",
+        persona4: "এখনো ইতিহাস নেই",
+        persona5: "সতর্কতা, বাফার নেই",
         userN: (n) => "ব্যবহারকারী " + n,
         monthN: (n) => "মাস " + n,
         monthTest: "পরীক্ষা",
@@ -444,7 +481,7 @@
           days_since_last_inflow: "শেষবার টাকা আসার পর কত দিন (০-২০)",
           bill_payments_d1_20: "বিল পরিশোধের সংখ্যা",
           prev_month_shortfall: "গত মাসে টাকা কম পড়েছিল (০ = না, ১ = হ্যাঁ)",
-          inflow_vs_prev_month: "গত মাসের তুলনায় আসা টাকা"
+          inflow_vs_prev_month: "এ পর্যন্ত আসা টাকা বনাম গত মাসের মোট (অনুপাত; ১ = গত মাসের মোটের সমান)"
         }
       },
       // Results tab: English only by design (only the two tab labels above follow the language toggle).
@@ -500,6 +537,17 @@
         fairLine: (groups, low) => (low === 0 ? "All " + groups + " groups have enough rows; none is flagged low-sample."
           : low + " of " + groups + " groups are flagged low-sample.") +
           " These gaps are measured on simulated data. They do not show that there is no bias; re-check them on real data.",
+        impactTitle: "Fees the saver could act on (simulated)",
+        impactAssumption: "Assumption: 1.5% placeholder fee, simulated cash-outs. This is the fee base the saver can act on, not savings achieved.",
+        impactPast: "These are fees already paid on days 1-20, not future fees.",
+        impactAlerted: (n, months) => "Alerted user-months (simulated test months " + months + "): " + n + ".",
+        impactShown: (n) => "Of those, the cash-out saver would show for " + n + ".",
+        impactFees: (fees) => "Total cash-out fees already paid in the user-months where the saver would show, at the placeholder rate: " + fees + ".",
+        notAvailable: "not available",
+        impactAvgAlerted: (x) => "Average per alerted user-month: " + x + " (total fees divided by the alerted count).",
+        impactAvgShown: (x) => "Average per saver-shown user-month: " + x + " (total fees divided by the saver-shown count).",
+        impactRate: (pct) => "Fee rate used: " + pct + "% of each cash-out amount (placeholder).",
+        impactMissing: "The impact figures are not available right now.",
         pathTitle: "Path to real data",
         path: [
           "Pilot with an opted-in group of users under a data-sharing agreement.",
@@ -1096,8 +1144,25 @@
       cards.push(el("p", "disclaimer", d.disclaimer));
       $("results-body").replaceChildren(...cards);
     }
-    // Impact card placeholder until the impact section is added.
-    function impactCard(_impact) { return null; }
+    // SECTION: impact card. Reads only the served impact field; no arithmetic. A missing or broken field
+    // gives a one-line message instead of a blank card.
+    function impactCard(m) {
+      const R = STRINGS.results;
+      const ok = m && ["alerted_user_months", "saver_shown_user_months", "fees_bdt"].every((k) => Number.isFinite(m[k]));
+      if (!ok) return resultsCard(R.impactTitle, el("p", "soft", R.impactMissing));
+      const avg = (x) => (Number.isFinite(x) ? taka(x, "en") : R.notAvailable);
+      const months = Array.isArray(m.months) ? m.months.join(", ") : R.notAvailable;
+      const lines = [
+        R.impactAlerted(num(m.alerted_user_months, "en"), months),
+        R.impactShown(num(m.saver_shown_user_months, "en")),
+        R.impactFees(taka(m.fees_bdt, "en")),
+        R.impactAvgAlerted(avg(m.avg_fees_per_alerted_bdt)),
+        R.impactAvgShown(avg(m.avg_fees_per_saver_shown_bdt))
+      ];
+      if (Number.isFinite(m.fee_rate_pct)) lines.push(R.impactRate(num(m.fee_rate_pct, "en")));
+      return resultsCard(R.impactTitle, plainList(lines),
+        el("p", "soft", R.impactAssumption), el("p", "soft", R.impactPast));
+    }
 
     // SECTION: results tab load. Fetched once, the first time the tab opens; a failure lets the next open retry.
     async function loadResults() {
@@ -1165,6 +1230,34 @@
         if (wi.lastOverrides) sendWhatif(wi.lastOverrides); else { counters.whatif++; $("wi-out").replaceChildren(); }
       });
     });
+
+    // SECTION: demo personas. Found by scan; the generator is deterministic. A click sets both dropdowns and
+    // runs the same reload as a manual change; savings cases pre-fill the planner but do not send it.
+    const PERSONAS = [
+      { user: 1, month: 4 },                          // Alert, buffer capped by the day-20 balance.
+      { user: 8, month: 4 },                          // Alert, full buffer.
+      { user: 1, month: 5 },                          // Low risk, no alert.
+      { user: 19, month: 4, goal: 10000, months: 6 }, // Savings plan "feasible".
+      { user: 1, month: 0, goal: 10000, months: 6 },  // Savings "no_history".
+      { user: 3, month: 4 }                           // High risk, alert, balance too low for a buffer.
+    ];
+    const personaButtons = document.querySelectorAll("[data-persona]");
+    const clearPersona = () => personaButtons.forEach((b) => b.setAttribute("aria-pressed", "false"));
+    personaButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const p = PERSONAS[Number(btn.dataset.persona)];
+        const userOk = [...$("user-select").options].some((o) => o.value === String(p.user));
+        if (!userOk) return;                           // Users not loaded yet.
+        $("user-select").value = String(p.user);
+        $("month-select").value = String(p.month);
+        clearPersona();
+        btn.setAttribute("aria-pressed", "true");
+        onSelectionChange();
+        if (p.goal) { $("sv-goal").value = String(p.goal); $("sv-months").value = String(p.months); }
+      });
+    });
+    $("user-select").addEventListener("change", clearPersona);    // A manual change clears the highlight.
+    $("month-select").addEventListener("change", clearPersona);
 
     // SECTION: start-up. Build the month list and what-if fields, label everything, load users, then the data.
     (async function start() {
