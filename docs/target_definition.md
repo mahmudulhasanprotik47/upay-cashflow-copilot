@@ -13,9 +13,9 @@ We make one prediction per user per month, at the end of day 20 (`PREDICTION_DAY
 - The target is **1** if the user's simulated balance falls below `SHORTFALL_FLOOR_BDT` (500 BDT) on any day from 21 to 30. Otherwise it is **0**.
 - The label is worked out from the simulated daily balance. The data generator never sets the label directly.
 
-## 3. Features (to be finalized in Phase 1)
+## 3. Features (final list in model_card.md)
 
-These are proposed names only. Each one uses days 1-20 only.
+Each one uses days 1-20 only. The model card lists the final 11 features, which add inflow_vs_prev_month.
 
 - `balance_day20`: balance at the end of day 20
 - `min_balance_d1_20`: lowest balance on days 1-20

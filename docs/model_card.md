@@ -72,7 +72,7 @@ At equal alert volume (170 alerts each): rule recall 0.301, precision 0.459; mod
 **Sanity checks**
 - A model trained on shuffled labels scores test ROC-AUC 0.520, close to chance as expected.
 - Adding 1,000 BDT to the day-20 balance lowers the risk for 62.6% of rows, raises it for 0.0% and leaves it unchanged for 37.4% (rows already far from risk). The monotone constraint works.
-- Trained on 70% of users and tested on the other 30% (users the model has never seen), View 2 PR-AUC is 0.433, against 0.429 for the main model on the same users. So the model does not depend on having seen a user before.
+- Trained on 70% of users and tested on the other 30% (users the model has never seen), View 2 PR-AUC is 0.4325, against 0.4292 for the main model on the same users.
 
 **Helper model (minimum balance):** mean absolute error is 2,153 BDT (2,241 BDT on shortfall rows). The naive guess "minimum = day-20 balance" has an error of 3,040 BDT (3,245 BDT on shortfall rows).
 
@@ -94,9 +94,11 @@ No group is below 150 rows, so none is marked LOW SAMPLE. The groups only differ
 - **Sweep cash-outs.** On day 1, balances above one month of income are cashed out. There are 318 such cash-outs, carrying 2.3% of all cash-out fees. They are counted in the cash-out features as normal cash-outs, though they are really savings moves.
 - **Short lead time.** Most caught shortfalls happen within 1-2 days of day 20, which leaves little time to act.
 - **Small lead over the rule.** See the honest summary above.
-- **Calibration** is weaker at high risk, so the probability should be shown as a rough level, not an exact number.
+- **Calibration** is weaker at high risk, so the probability should be shown as a rough level, not an exact number. 
+
+**Already-low users.** Of the 464 shortfalls in View 1, 205 were already below 500 BDT on day 20 (464 minus the 259 in View 2), and the model caught all of them. The lead-time figure (303 caught shortfalls) includes them. In View 2, the stricter test, the model caught 98 of 259.
 
 ## Human oversight
-- The model only makes **suggestions**. Nothing moves money automatically. The user decides and taps to accept.
+- The model only makes **suggestions**. Nothing moves money automatically. The user decides; the app only shows suggestions.
 - A user predicted to run short is offered a buffer suggestion, never a savings suggestion.
 - The alert threshold can be changed in one place (`ALERT_THRESHOLD_OVERRIDE` in `src/config.py`). Any change should be reviewed by a person, together with the fairness numbers.
