@@ -1,14 +1,14 @@
 # Data Assumptions
 
 ## Synthetic data statement
-All data in this project is **simulated** by `src/data/generator.py` (run `python -m src.data.generator`). No real upay user, transaction, balance or fee data is used. The simulation is deterministic: the same `SEED` in `src/config.py` always gives the same files. Every number below is an **ASSUMPTION** and is a named constant in `src/config.py`.
+All data in this project is **simulated** by `src/data/generator.py` (run `python -m src.data.generator`). No real upay user, transaction, balance or fee data is used. The simulation is deterministic: the same `SEED` in `src/config.py` always gives the same files. Every number below is an **ASSUMPTION**. Most are named constants in `src/config.py`; a few are literals in `src/data/generator.py` (listed in `synthetic_assumptions.md`).
 
 Output files (in `data/`, not committed to git):
 - `users.csv`: user_id, income_type, income_band, region, age_band, income_day (blank for non-salaried users), opening_balance
 - `transactions.csv`: user_id, month, day, type, direction (in/out), amount, fee, channel (app/agent)
 - `daily_balance.csv`: user_id, month, day, end_of_day_balance
 
-All amounts are whole BDT. There is **no label or shortfall column** in any file. The target is worked out later from `daily_balance.csv` (see `target_definition.md`). Hidden simulation habits (bill load, cash-out habit, family send share, bill days, shock probabilities) are never written to any file.
+All amounts are whole BDT. There is **no label or shortfall column** in any file. The target is worked out later from `daily_balance.csv` (see `target_definition.md`). Hidden simulation habits (bill load, cash-out habit, family send share, bill days) are never written to any file.
 
 ## Population
 - ASSUMPTION: 1,000 users (`N_USERS`), 6 months (`N_MONTHS`) of 30 days (`DAYS_IN_MONTH`).
@@ -48,7 +48,7 @@ Stress (a low balance) comes only from these mechanisms. It is never stamped on 
 - **Family emergency.** ASSUMPTION: 15% chance per month of an extra send to family of 50% of monthly income, on a random day.
 - **Festival month.** ASSUMPTION: month index 3 (the 4th month) has family sends × 2.0 and merchant spending × 1.4.
 
-Results of the generator's built-in checks at the current settings: 23.3% of user-months dip below 500 BDT on days 21-30. The ROC-AUC of the day-20 balance alone is 0.851.
+Results of the generator's built-in checks at the current settings: 23.3% of user-months dip below 500 BDT on days 21-30. The ROC-AUC of the day-20 balance alone is 0.851. The generator's own target band for this check is 0.65-0.85, so 0.851 sits marginally above it; the generator's check prints a status line for it.
 
 ## Fee source (TO BE SOURCED)
 TO BE SOURCED by researcher. `CASHOUT_FEE_RATE` (currently 1.5%) is a placeholder ASSUMPTION and must be replaced with a figure sourced from upay's official site.
