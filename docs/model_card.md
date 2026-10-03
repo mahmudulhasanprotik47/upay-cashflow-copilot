@@ -29,7 +29,7 @@ A second, helper model predicts the lowest balance on days 21-30 in BDT. It only
 ## Split and validation
 - **Train:** months 0-3 (4,000 user-months). **Test:** months 4-5 (2,000 user-months). The split is by time, never random.
 - **Choosing settings (training months only):** month 2 is predicted by a model trained on months 0-1, and month 3 by a model trained on months 0-2. On those pooled 2,000 predictions we pick, by best F1, the model's alert threshold (**0.2775**) and the rule's cut-off X (**2,151 BDT**).
-- The final model is then trained on all of months 0-3 with the same fixed settings: 300 trees, depth 4, learning rate 0.05. The test months were never used to choose anything.
+- The test months were never used to choose the alert threshold, the rule cut-off or the training settings. One design change, the monotone constraint below, was made after seeing test-month behaviour
 - **Monotone constraint:** the model is forced so that a higher `balance_day20` can never raise the risk. Every other feature is unconstrained. We added it because, in the first run without it, 15.2% of test rows got a *higher* risk when 1,000 BDT was added to their balance, which makes no sense to a user. The constraint was added once, after that first run, as a domain-knowledge decision (a higher balance should never raise risk). There was no further tuning.
 
 ## Baselines
