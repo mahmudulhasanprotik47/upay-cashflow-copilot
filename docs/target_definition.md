@@ -42,7 +42,7 @@ Each one uses days 1-20 only. The model card lists the final 11 features, which 
 ## 6. Baseline rule
 
 - The simple rule is "flag the user if their balance on day 20 is below X". X is tuned on the training months only.
-- The model is only worth using if it beats this rule on the test months.
+- The model is only worth using if it adds something beyond this rule. On the test months its lead is small and not statistically clear (see model_card.md). Its measurable extras are the minimum-balance estimate and the reasons for each alert.
 
 ## 7. Fairness
 
@@ -51,7 +51,7 @@ Each one uses days 1-20 only. The model card lists the final 11 features, which 
 
 ## 8. Suggestion rules
 
-- Every suggestion is optional. The user taps to accept it. Nothing moves money automatically.
+- Every suggestion is optional. The user decides; the app only shows suggestions. Nothing moves money automatically.
 - A user predicted to run short never gets a savings suggestion. We suggest keeping a buffer instead.
 - A savings suggestion is never more than `SAVINGS_CAP_FRACTION` (half) of the user's predicted safe surplus.
 - Fees and savings amounts are shown as plain numbers, in BDT.
