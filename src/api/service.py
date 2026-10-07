@@ -80,16 +80,38 @@ def check_user_month(user_id, month):
         raise NotFound("no such user-month")
 
 
+# Phase 2B live-data overlay. None (the default, and always in the self-checks) = the simulated data as
+# loaded. The server sets it to a function (user_id, month) -> {"features", "tx_month", "balance_by_day"}
+# or None, so user-months with live transactions are answered from the live view.
+OVERLAY = None
+
+
+def live_view(user_id, month):
+    """The overlay's view of one user-month, or None when there is no overlay or no live data."""
+    return OVERLAY(user_id, month) if OVERLAY is not None else None
+
+
 def features_for(user_id, month):
     """The 11 model inputs for one user-month, with blanks as None."""
+    if (live := live_view(user_id, month)) is not None:
+        return dict(live["features"])
     row = state()["features"].loc[(user_id, month)]
     return {name: (None if pd.isna(row[name]) else float(row[name])) for name in FEATURES}
 
 
 def tx_for(user_id, month=None):
     """One user's transactions, optionally for one month only."""
+    if month is not None and (live := live_view(user_id, month)) is not None:
+        return live["tx_month"]
     tx = state()["tx_by_user"][user_id]
     return tx if month is None else tx[tx["month"] == month]
+
+
+def balance_for(user_id, month):
+    """End-of-day balances for days 1-20 of one user-month (the chart data)."""
+    if (live := live_view(user_id, month)) is not None:
+        return live["balance_by_day"]
+    return state()["balance_by_um"][(user_id, month)]
 
 
 def display_value(feature, value):
@@ -169,7 +191,7 @@ def forecast(user_id, month, lang="en"):
     return {"user_id": user_id, "month": month, "lang": lang,
             "month_in_training": month < cfg.N_MONTHS - cfg.TEST_MONTHS,  # Months 0-3 were used to train.
             **out,
-            "balance_by_day": state()["balance_by_um"][(user_id, month)],
+            "balance_by_day": balance_for(user_id, month),
             "disclaimer": render("disclaimer", lang)}
 
 
@@ -625,6 +647,12 @@ def self_checks():
                           or "is_estimate" in sg)  # The buffer is a rule, not an estimate.
     report(16, "buffer '3 days' text only when not capped", bad16 == 0 and capped_n and uncapped_n,
            f"{capped_n} capped, {uncapped_n} uncapped texts, bad {bad16}")
+
+    # 17+. Phase 2 checks, imported here so checks 1-16 never depend on the new modules.
+    from src.security.selfchecks import check_access
+    check_access(report)
+    from src.live.selfchecks import check_live  # Checks 18-20.
+    check_live(report)
 
 
 if __name__ == "__main__":

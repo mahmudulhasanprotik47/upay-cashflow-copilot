@@ -1,6 +1,7 @@
 # Central settings for the upay Smart Cash-Flow Copilot. All data is simulated.
 # Change values here to change the behaviour everywhere else in the project.
 
+import os  # Reads the optional database path from the environment.
 from pathlib import Path  # Standard tool for building file paths that work on any OS.
 
 # Project root folder (one level above src/), so paths work from anywhere.
@@ -95,7 +96,8 @@ API_PORT = 8000  # Port the API listens on.
 CORS_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000",
                 "http://localhost:8000", "http://127.0.0.1:8000"]  # Web pages allowed to call the API.
 BANNED_WORDS_EN = ["hurry", "urgent", "act now", "last chance", "don't miss",
-                   "limited time", "immediately", "panic", "guaranteed"]  # Pressure words never used in messages.
+                   "limited time", "immediately", "panic", "guaranteed",
+                   "fraud", "suspicious"]  # Pressure and accusing words never used in messages.
 WHATIF_SAME_TOLERANCE = 0.02  # A what-if risk change smaller than this (internally) is shown as "about the same".
 
 # ---------------------------------------------------------------------------
@@ -105,3 +107,43 @@ BANNED_WORDS_BN = ["এখনই", "জরুরি", "তাড়াতাড�
 CAUSAL_WORDS_EN = ["pushes", "helps", "reduces", "causes", "improves"]  # Reasons never claim a cause (English).
 CAUSAL_WORDS_BN = ["বাড়ায়", "বাড়াতে", "কমায়", "কমাতে", "সাহায্য", "কারণে", "উন্নত"]  # Reasons never claim a cause (Bangla).
 BUFFER_DAYS_OF_SPEND = 3  # ASSUMPTION: the suggested buffer is this many days of the user's own average daily spending.
+
+# ---------------------------------------------------------------------------
+# Phase 2A: database, accounts, sessions, API keys, rate limits.
+# ---------------------------------------------------------------------------
+# SQLite file (ignored by git). Holds accounts, consents, live data and logs. COPILOT_DB_PATH can point a
+# test server at a throwaway file instead.
+DB_PATH = Path(os.environ.get("COPILOT_DB_PATH") or DATA_DIR / "copilot.db")
+DB_SCHEMA_VERSION = 1  # Stored in the database; raise it when the tables change.
+ROLES = ["admin", "analyst", "customer"]  # Who can sign in. Customers are linked to one simulated user_id.
+ADMIN_USERNAME = "admin"  # Username of the first admin, created on the first start.
+ADMIN_PASSWORD_ENV = "COPILOT_ADMIN_PASSWORD"  # Environment variable with the first admin's password.
+PASSWORD_MIN_LENGTH = 10  # Shortest password accepted when an account is created or reset.
+SCRYPT_N, SCRYPT_R, SCRYPT_P = 2 ** 14, 8, 1  # Cost settings for the scrypt password hash (about 16 MB each).
+SESSION_COOKIE = "copilot_session"  # Name of the HttpOnly session cookie.
+SESSION_HOURS = 8  # A session ends after this many hours.
+LOGIN_MAX_FAILURES = 5  # This many wrong passwords in a row lock the account...
+LOCKOUT_MINUTES = 5  # ...for this many minutes.
+RATE_WINDOW_SECONDS = 60  # Length of the sliding window for rate limits.
+RATE_LIMIT_SESSION = 300  # Requests per window for one signed-in session.
+RATE_LIMIT_API_KEY = 3000  # Requests per window for one API key (machine clients send more).
+RATE_LIMIT_IP = 120  # Requests per window from one IP address without a session or key.
+RATE_LIMIT_LOGIN = 10  # Sign-in attempts per window from one IP address (on top of the limits above).
+AUDIT_PAGE_SIZE = 100  # Most audit entries returned at once.
+FEATURE_SWITCHES = ["live_transactions", "budget_warnings", "unusual_check"]  # Admin can turn these off.
+
+# ---------------------------------------------------------------------------
+# Phase 2B: live transactions, consent, budgets, unusual-activity check.
+# ---------------------------------------------------------------------------
+LIVE_TYPES = {"salary_or_income": "in", "add_money": "in", "merchant_payment": "out",
+              "bill_payment": "out", "mobile_recharge": "out", "send_money_family": "out",
+              "cash_out": "out"}  # The 7 transaction types in the simulated data, with their direction.
+LIVE_MAX_AMOUNT_BDT = 200000  # Largest single live transaction accepted (whole BDT).
+CONSENT_NOTICE_VERSION = "2026-10-v1"  # Version of the data notice; change it when the notice text changes.
+BUDGET_TYPES = ["merchant_payment", "bill_payment", "mobile_recharge", "send_money_family",
+                "cash_out"]  # Spending types that get a monthly budget bar.
+BUDGET_CLOSE_SHARE = 0.8  # A budget bar shows "close to budget" from this share of the budget.
+ANOMALY_TRAIN_FLAG_RATE = 0.01  # The unusual-activity cut flags this share of training transactions.
+ANOMALY_INJECTED_ROWS = 500  # Artificial outliers injected into a copy of the test months for evaluation.
+ANOMALY_INJECT_MULT = (5.0, 10.0)  # Injected outliers are this many times a real transaction's amount.
+ANOMALY_DIR = ARTIFACTS_DIR / "anomaly"  # Saved unusual-activity model and its evaluation.

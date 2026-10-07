@@ -1,0 +1,531 @@
+<!doctype html>
+<!-- upay Smart Cash-Flow Copilot: the admin panel. One self-contained file, all data simulated. -->
+<html lang="en">
+<head>
+  <!-- SECTION: page setup (character set, phone scaling, tab title) -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Copilot admin panel</title>
+
+  <style>
+    /* SECTION: design settings, shared with the wallet page. */
+    :root {
+      --font: system-ui, -apple-system, "Segoe UI", Roboto, "Nirmala UI", "Noto Sans Bengali", "Vrinda", sans-serif;
+      --radius: 14px; --radius-small: 999px;
+      --page-bg: #eef2f5; --card-bg: #ffffff; --text: #1b2733; --text-soft: #4a5866; --line: #d7dee5;
+      --brand: #0b5c8a; --brand-text: #ffffff; --focus: #f2b705; --note-bg: #f4f6f8; --tag-bg: #e8eef3;
+      --warn-bg: #fbdac4; --warn-text: #8a3300; --ok-bg: #dcf2e3; --ok-text: #165c34;
+    }
+
+    /* SECTION: base page. A wider column than the wallet, for tables. */
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--page-bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.5; }
+    .app { max-width: 980px; margin: 0 auto; min-height: 100vh; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+
+    /* SECTION: top bar (title, simulated badge, language toggle, who is signed in). */
+    .topbar { background: var(--brand); color: var(--brand-text); padding: 16px; }
+    .topbar h1 { margin: 0 0 8px; font-size: 1.25rem; }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+    .spread { justify-content: space-between; }
+    .badge { font-size: 0.8125rem; padding: 2px 10px; border-radius: var(--radius-small); border: 1px solid var(--brand-text); }
+    .lang-toggle { display: flex; border: 1px solid var(--brand-text); border-radius: var(--radius-small); overflow: hidden; }
+    .lang-toggle button { font: inherit; font-size: 0.9375rem; padding: 4px 12px; min-height: 36px; background: transparent; color: var(--brand-text); border: 0; cursor: pointer; }
+    .lang-toggle button[aria-pressed="true"] { background: var(--brand-text); color: var(--brand); font-weight: 600; }
+    .topbar a { color: var(--brand-text); }
+    .session { margin-top: 10px; font-size: 0.875rem; }
+
+    /* SECTION: cards, forms, buttons, tables. */
+    main { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; min-width: 0; }
+    .card h2 { margin: 0 0 8px; font-size: 1.0625rem; }
+    .card h3 { margin: 12px 0 4px; font-size: 0.9375rem; color: var(--text-soft); }
+    .card p { margin: 4px 0; }
+    .soft { color: var(--text-soft); font-size: 0.9375rem; }
+    .field { display: flex; flex-direction: column; font-size: 0.875rem; color: var(--text-soft); }
+    input, select { font: inherit; font-size: 1rem; color: var(--text); margin-top: 4px; padding: 6px 8px; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-bg); }
+    .btn { font: inherit; font-weight: 600; min-height: 40px; padding: 6px 16px; border: 0; cursor: pointer; border-radius: var(--radius-small); background: var(--brand); color: var(--brand-text); }
+    .btn.small { min-height: 32px; padding: 2px 12px; font-weight: 400; background: var(--tag-bg); color: var(--text); }
+    .btn.warn { background: var(--warn-text); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .form-error { color: var(--warn-text); }
+    .msg:empty { display: none; }
+    .ok-box { background: var(--ok-bg); color: var(--ok-text); padding: 10px 12px; border-radius: 8px; word-break: break-all; }
+    .table-wrap { overflow-x: auto; max-width: 100%; margin-top: 8px; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+    th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    code { font-size: 0.8125rem; }
+    .stats { list-style: none; padding: 0; margin: 6px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; }
+    .stats li { background: var(--note-bg); border-radius: 8px; padding: 8px 10px; }
+    .stats strong { display: block; font-size: 1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SECTION: top bar. Title, permanent "Simulated data" badge, language toggle, session line. -->
+    <header class="topbar">
+      <h1 data-s="title"></h1>
+      <div class="row spread">
+        <span class="badge" data-s="simulated"></span>
+        <div class="lang-toggle" role="group" id="lang-group">
+          <button type="button" id="lang-en" data-lang="en" aria-pressed="true">EN</button>
+          <button type="button" id="lang-bn" data-lang="bn" aria-pressed="false" lang="bn">বাংলা</button>
+        </div>
+      </div>
+      <div class="row session">
+        <a href="./" data-s="walletLink"></a>
+        <span id="who"></span>
+        <button type="button" class="btn small" id="logout-btn" data-s="signOut" hidden></button>
+      </div>
+    </header>
+
+    <main>
+      <p class="msg form-error" id="status" role="status" aria-live="polite"></p>
+
+      <!-- SECTION: sign-in (shown while signed out). -->
+      <section class="card" id="login-card" hidden aria-labelledby="login-title">
+        <h2 id="login-title" data-s="signInTitle"></h2>
+        <form id="login-form" class="row" novalidate>
+          <label class="field"><span data-s="usernameLabel"></span><input id="login-user" autocomplete="username" maxlength="80"></label>
+          <label class="field"><span data-s="passwordLabel"></span><input id="login-pass" type="password" autocomplete="current-password" maxlength="200"></label>
+          <button type="submit" class="btn" data-s="signInButton"></button>
+        </form>
+        <p class="msg form-error" id="login-msg" aria-live="polite"></p>
+      </section>
+
+      <!-- SECTION: customers who open this page are sent back to their wallet. -->
+      <section class="card" id="not-staff" hidden><p data-s="notStaff"></p></section>
+
+      <div id="panel" hidden>
+        <!-- SECTION 1: accounts (admin only). List, create, and change one account. -->
+        <section class="card admin-only" aria-labelledby="acc-title">
+          <h2 id="acc-title" data-s="accTitle"></h2>
+          <div class="table-wrap"><table id="acc-table"></table></div>
+          <h3 data-s="accCreate"></h3>
+          <form id="acc-create" class="row" novalidate>
+            <label class="field"><span data-s="usernameLabel"></span><input id="ac-user" maxlength="40"></label>
+            <label class="field"><span data-s="passwordLabel"></span><input id="ac-pass" type="password" autocomplete="new-password" maxlength="200"></label>
+            <label class="field"><span data-s="roleLabel"></span><select id="ac-role"></select></label>
+            <label class="field"><span data-s="userIdLabel"></span><input id="ac-uid" type="number" min="1" step="1"></label>
+            <button type="submit" class="btn" data-s="create"></button>
+          </form>
+          <h3 data-s="accChange"></h3>
+          <form id="acc-change" class="row" novalidate>
+            <label class="field"><span data-s="accountLabel"></span><select id="ch-acc"></select></label>
+            <label class="field"><span data-s="roleLabel"></span><select id="ch-role"></select></label>
+            <label class="field"><span data-s="userIdLabel"></span><input id="ch-uid" type="number" min="1" step="1"></label>
+            <button type="submit" class="btn" data-s="saveRole"></button>
+          </form>
+          <div class="row">
+            <label class="field"><span data-s="newPassword"></span><input id="ch-pass" type="password" autocomplete="new-password" maxlength="200"></label>
+            <button type="button" class="btn small" id="ch-reset" data-s="resetPassword"></button>
+            <button type="button" class="btn small" id="ch-disable" data-s="disable"></button>
+            <button type="button" class="btn small" id="ch-enable" data-s="enable"></button>
+            <button type="button" class="btn small" id="ch-unlock" data-s="unlock"></button>
+          </div>
+          <p class="msg" id="acc-msg" aria-live="polite"></p>
+        </section>
+
+        <!-- SECTION 2: feature switches. Everyone, or one user. Analysts see them read-only. -->
+        <section class="card" aria-labelledby="sw-title">
+          <h2 id="sw-title" data-s="swTitle"></h2>
+          <p class="soft" data-s="swNote"></p>
+          <div class="row" id="sw-global"></div>
+          <h3 data-s="swUser"></h3>
+          <form id="sw-form" class="row admin-only" novalidate>
+            <label class="field"><span data-s="userIdLabel"></span><input id="sw-uid" type="number" min="1" step="1"></label>
+            <label class="field"><span data-s="switchLabel"></span><select id="sw-key"></select></label>
+            <label class="field"><span data-s="stateLabel"></span><select id="sw-state"></select></label>
+            <button type="submit" class="btn" data-s="apply"></button>
+          </form>
+          <div class="table-wrap"><table id="sw-table"></table></div>
+          <p class="msg" id="sw-msg" aria-live="polite"></p>
+        </section>
+
+        <!-- SECTION 3: API keys (admin only). A new key is shown once. -->
+        <section class="card admin-only" aria-labelledby="key-title">
+          <h2 id="key-title" data-s="keyTitle"></h2>
+          <form id="key-form" class="row" novalidate>
+            <label class="field"><span data-s="labelLabel"></span><input id="key-label" maxlength="80"></label>
+            <button type="submit" class="btn" data-s="create"></button>
+          </form>
+          <div id="key-new" hidden>
+            <p data-s="keyOnce"></p>
+            <p class="ok-box"><code id="key-value"></code></p>
+          </div>
+          <div class="table-wrap"><table id="key-table"></table></div>
+          <p class="msg" id="key-msg" aria-live="polite"></p>
+        </section>
+
+        <!-- SECTION 4: audit log. Latest entries, optionally for one user. -->
+        <section class="card" aria-labelledby="audit-title">
+          <h2 id="audit-title" data-s="auditTitle"></h2>
+          <form id="audit-form" class="row" novalidate>
+            <label class="field"><span data-s="userIdOptional"></span><input id="audit-uid" type="number" min="1" step="1"></label>
+            <button type="submit" class="btn" data-s="refresh"></button>
+          </form>
+          <div class="table-wrap"><table id="audit-table"></table></div>
+        </section>
+
+        <!-- SECTION 5: consent overview. -->
+        <section class="card" aria-labelledby="consent-title">
+          <h2 id="consent-title" data-s="consentTitle"></h2>
+          <p class="soft" id="consent-version"></p>
+          <div class="table-wrap"><table id="consent-table"></table></div>
+        </section>
+
+        <!-- SECTION 6: monitoring. Counts from the logs; simulated data. -->
+        <section class="card" aria-labelledby="mon-title">
+          <h2 id="mon-title" data-s="monTitle"></h2>
+          <p class="soft" data-s="monNote"></p>
+          <ul class="stats" id="mon-stats"></ul>
+          <div class="table-wrap"><table id="mon-rejected"></table></div>
+          <div class="row">
+            <button type="button" class="btn small" id="mon-refresh" data-s="refresh"></button>
+            <button type="button" class="btn warn admin-only" id="reset-live" data-s="resetLive"></button>
+          </div>
+          <p class="msg" id="mon-msg" aria-live="polite"></p>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    "use strict";
+
+    // SECTION: STRINGS. Every piece of text that does not come from the API, in English and Bangla.
+    const STRINGS = {
+      en: {
+        title: "Copilot admin panel", simulated: "Simulated data", langGroup: "Language",
+        walletLink: "Back to the wallet", signOut: "Sign out",
+        signedInAs: (n, r) => "Signed in as " + n + " (" + r + ")",
+        roles: { admin: "admin", analyst: "analyst", customer: "customer" },
+        signInTitle: "Sign in (staff)", usernameLabel: "Username", passwordLabel: "Password", signInButton: "Sign in",
+        signInMissing: "Please enter your username and password.",
+        notStaff: "This panel is for staff. Please use the wallet page.",
+        errorFallback: "Something went wrong. Please try again.",
+        accTitle: "1. Accounts", accCreate: "Create an account", accChange: "Change one account",
+        roleLabel: "Role", userIdLabel: "Linked user id (customers only)", accountLabel: "Account",
+        create: "Create", saveRole: "Save role and link", newPassword: "New password (10+ characters)",
+        resetPassword: "Reset password", disable: "Disable", enable: "Enable", unlock: "Unlock",
+        accCols: ["Id", "Username", "Role", "Linked user", "State", "Created"],
+        stateDisabled: "disabled", stateLocked: "locked", stateActive: "active", none: "-",
+        done: "Saved.",
+        swTitle: "2. Feature switches", swNote: "On for everyone unless turned off here. A setting for one user wins over the setting for everyone.",
+        swUser: "For one user", switchLabel: "Switch", stateLabel: "State", apply: "Apply",
+        swNames: { live_transactions: "Live transactions", budget_warnings: "Budget warnings", unusual_check: "Unusual-activity check" },
+        swStates: { on: "On", off: "Off", clear: "Remove the setting" },
+        swEveryone: (name) => name + " (everyone)",
+        swCols: ["User id", "Switch", "State"],
+        keyTitle: "3. API keys", labelLabel: "Label", keyOnce: "Here is the new key. It is shown only this once; copy it now.",
+        keyCols: ["Id", "Label", "Starts with", "State", "Created", ""], revoke: "Revoke", revoked: "revoked", activeKey: "active",
+        auditTitle: "4. Audit log (latest 100)", userIdOptional: "User id (optional)", refresh: "Refresh",
+        auditCols: ["Time (UTC)", "Who", "Role", "Action", "User id", "Detail"],
+        consentTitle: "5. Consent overview", consentVersion: (v) => "Current notice version: " + v,
+        consentCols: ["Username", "User id", "State", "Version", "Given (UTC)", "Withdrawn (UTC)"],
+        consentStates: { none: "not given", given: "given", withdrawn: "withdrawn", old_notice: "older notice" },
+        monTitle: "6. Monitoring", monNote: "Counts from this machine's logs. All transactions are simulated.",
+        mon: { live_processed: "Live transactions scored", unusual_flags: "Unusual-for-user flags", budget_warnings: "Budget warnings shown",
+               median_scoring_ms: "Median scoring time (ms)", live_rows_stored: "Live rows stored", staff_wallet_views: "Staff wallet views" },
+        monAlerts: (band) => "Scored with " + band + " risk", bands: { low: "low", medium: "medium", high: "high" },
+        rejCols: ["Rejected because", "Count"], noValue: "-",
+        resetLive: "Reset all live data", resetConfirm: "Delete every live transaction for every user?",
+        resetDone: (n) => "Deleted " + n + " live transactions."
+      },
+      bn: {
+        title: "কোপাইলট অ্যাডমিন প্যানেল", simulated: "সিমুলেটেড ডেটা", langGroup: "ভাষা",
+        walletLink: "ওয়ালেটে ফিরে যান", signOut: "সাইন আউট",
+        signedInAs: (n, r) => n + " হিসেবে সাইন ইন করা আছে (" + r + ")",
+        roles: { admin: "অ্যাডমিন", analyst: "বিশ্লেষক", customer: "গ্রাহক" },
+        signInTitle: "সাইন ইন (কর্মী)", usernameLabel: "ইউজারনেম", passwordLabel: "পাসওয়ার্ড", signInButton: "সাইন ইন",
+        signInMissing: "অনুগ্রহ করে ইউজারনেম ও পাসওয়ার্ড লিখুন।",
+        notStaff: "এই প্যানেলটি কর্মীদের জন্য। অনুগ্রহ করে ওয়ালেট পাতা ব্যবহার করুন।",
+        errorFallback: "কিছু একটা ভুল হয়েছে। আবার চেষ্টা করুন।",
+        accTitle: "১. অ্যাকাউন্ট", accCreate: "নতুন অ্যাকাউন্ট তৈরি করুন", accChange: "একটি অ্যাকাউন্ট বদলান",
+        roleLabel: "ভূমিকা", userIdLabel: "যুক্ত ব্যবহারকারী নম্বর (শুধু গ্রাহক)", accountLabel: "অ্যাকাউন্ট",
+        create: "তৈরি করুন", saveRole: "ভূমিকা ও সংযোগ সংরক্ষণ", newPassword: "নতুন পাসওয়ার্ড (১০+ অক্ষর)",
+        resetPassword: "পাসওয়ার্ড বদলান", disable: "বন্ধ করুন", enable: "চালু করুন", unlock: "আনলক করুন",
+        accCols: ["নম্বর", "ইউজারনেম", "ভূমিকা", "যুক্ত ব্যবহারকারী", "অবস্থা", "তৈরির সময়"],
+        stateDisabled: "বন্ধ", stateLocked: "লক করা", stateActive: "চালু", none: "-",
+        done: "সংরক্ষণ করা হয়েছে।",
+        swTitle: "২. সুবিধা চালু/বন্ধ", swNote: "এখানে বন্ধ না করলে সবার জন্য চালু থাকে। একজন ব্যবহারকারীর সেটিং সবার সেটিংয়ের চেয়ে অগ্রাধিকার পায়।",
+        swUser: "একজন ব্যবহারকারীর জন্য", switchLabel: "সুবিধা", stateLabel: "অবস্থা", apply: "প্রয়োগ করুন",
+        swNames: { live_transactions: "লাইভ লেনদেন", budget_warnings: "বাজেট সতর্কবার্তা", unusual_check: "অস্বাভাবিক লেনদেন যাচাই" },
+        swStates: { on: "চালু", off: "বন্ধ", clear: "সেটিং মুছে দিন" },
+        swEveryone: (name) => name + " (সবার জন্য)",
+        swCols: ["ব্যবহারকারী নম্বর", "সুবিধা", "অবস্থা"],
+        keyTitle: "৩. API কী", labelLabel: "নাম", keyOnce: "এটি নতুন কী। এটি শুধু এই একবার দেখানো হবে; এখনই কপি করে রাখুন।",
+        keyCols: ["নম্বর", "নাম", "শুরুর অংশ", "অবস্থা", "তৈরির সময়", ""], revoke: "বাতিল করুন", revoked: "বাতিল", activeKey: "চালু",
+        auditTitle: "৪. অডিট লগ (সর্বশেষ ১০০টি)", userIdOptional: "ব্যবহারকারী নম্বর (ঐচ্ছিক)", refresh: "হালনাগাদ করুন",
+        auditCols: ["সময় (UTC)", "কে", "ভূমিকা", "কাজ", "ব্যবহারকারী নম্বর", "বিস্তারিত"],
+        consentTitle: "৫. সম্মতির সারসংক্ষেপ", consentVersion: (v) => "বর্তমান নোটিশ সংস্করণ: " + v,
+        consentCols: ["ইউজারনেম", "ব্যবহারকারী নম্বর", "অবস্থা", "সংস্করণ", "দেওয়ার সময় (UTC)", "তুলে নেওয়ার সময় (UTC)"],
+        consentStates: { none: "দেওয়া হয়নি", given: "দেওয়া হয়েছে", withdrawn: "তুলে নেওয়া হয়েছে", old_notice: "পুরনো নোটিশ" },
+        monTitle: "৬. পর্যবেক্ষণ", monNote: "এই কম্পিউটারের লগ থেকে গণনা। সব লেনদেন সিমুলেটেড।",
+        mon: { live_processed: "মূল্যায়ন করা লাইভ লেনদেন", unusual_flags: "ব্যবহারকারীর জন্য অস্বাভাবিক চিহ্ন", budget_warnings: "দেখানো বাজেট সতর্কবার্তা",
+               median_scoring_ms: "মূল্যায়নের মধ্যমা সময় (মি.সে.)", live_rows_stored: "সংরক্ষিত লাইভ সারি", staff_wallet_views: "কর্মীদের ওয়ালেট দেখা" },
+        monAlerts: (band) => band + " ঝুঁকিতে মূল্যায়ন", bands: { low: "কম", medium: "মাঝারি", high: "উচ্চ" },
+        rejCols: ["প্রত্যাখ্যানের কারণ", "সংখ্যা"], noValue: "-",
+        resetLive: "সব লাইভ ডেটা মুছে দিন", resetConfirm: "সব ব্যবহারকারীর সব লাইভ লেনদেন মুছে দেবেন?",
+        resetDone: (n) => n + "টি লাইভ লেনদেন মুছে দেওয়া হয়েছে।"
+      }
+    };
+
+    // SECTION: page state and small helpers.
+    let lang = "en";
+    let me = null;                          // GET /auth/me (null while signed out).
+    const ROLES = ["admin", "analyst", "customer"];
+    const SWITCHES = ["live_transactions", "budget_warnings", "unusual_check"];
+    const S = () => STRINGS[lang];
+    const $ = (id) => document.getElementById(id);
+    function el(tag, className, text) {
+      const node = document.createElement(tag);
+      if (className) node.className = className;
+      if (text !== undefined && text !== null) node.textContent = String(text);   // textContent only.
+      return node;
+    }
+    const num = (n) => new Intl.NumberFormat(lang === "bn" ? "bn-BD" : "en-US", { maximumFractionDigits: 1 }).format(n);
+    const isAdmin = () => me && me.role === "admin";
+
+    // SECTION: request helper. Returns { data } or { msg }; a 401 shows the sign-in card.
+    async function api(method, url, body) {
+      try {
+        const options = { method };
+        if (body !== undefined) { options.headers = { "Content-Type": "application/json" }; options.body = JSON.stringify(body); }
+        const response = await fetch(url, options);
+        let data = null;
+        try { data = await response.json(); } catch (_e) { /* Not JSON. */ }
+        if (response.ok) return { data };
+        if (response.status === 401 && me) showSignedOut();
+        const msg = data && (lang === "bn" ? data.error_bn : data.error);
+        return { msg: typeof msg === "string" && msg ? msg : S().errorFallback };
+      } catch (_e) {
+        return { msg: S().errorFallback };
+      }
+    }
+    function say(id, text, isError) {
+      $(id).textContent = text || "";
+      $(id).className = "msg " + (isError ? "form-error" : "soft");
+    }
+
+    // SECTION: tables. Header row from STRINGS, cells from the API as text.
+    function fillTable(id, headers, rows) {
+      const table = $(id);
+      table.replaceChildren();
+      const head = el("tr");
+      headers.forEach((h) => { const th = el("th", "", h); th.scope = "col"; head.appendChild(th); });
+      table.appendChild(el("thead")).appendChild(head);
+      const body = table.appendChild(el("tbody"));
+      for (const r of rows) {
+        const tr = body.appendChild(el("tr"));
+        for (const c of r) {
+          const td = el("td");
+          if (c instanceof Node) td.appendChild(c); else td.textContent = c === null || c === undefined ? S().none : String(c);
+          tr.appendChild(td);
+        }
+      }
+    }
+    function fillSelect(id, values, label) {
+      const keep = $(id).value;
+      $(id).replaceChildren(...values.map((v) => { const o = el("option", "", label(v)); o.value = v; return o; }));
+      if (values.includes(keep)) $(id).value = keep;
+    }
+
+    // SECTION: fixed labels.
+    function applyStrings() {
+      document.documentElement.lang = lang;
+      document.querySelectorAll("[data-s]").forEach((n) => { n.textContent = S()[n.dataset.s]; });
+      $("lang-group").setAttribute("aria-label", S().langGroup);
+      $("lang-en").setAttribute("aria-pressed", String(lang === "en"));
+      $("lang-bn").setAttribute("aria-pressed", String(lang === "bn"));
+      $("who").textContent = me ? S().signedInAs(me.username, S().roles[me.role] || me.role) : "";
+      fillSelect("ac-role", ROLES, (r) => S().roles[r]);
+      fillSelect("ch-role", ROLES, (r) => S().roles[r]);
+      fillSelect("sw-key", SWITCHES, (k) => S().swNames[k]);
+      fillSelect("sw-state", ["on", "off", "clear"], (k) => S().swStates[k]);
+    }
+
+    // SECTION: section 1, accounts.
+    let accounts = [];
+    async function loadAccounts() {
+      if (!isAdmin()) return;
+      const r = await api("GET", "/admin/accounts");
+      if (r.msg) { say("acc-msg", r.msg, true); return; }
+      accounts = r.data;
+      fillTable("acc-table", S().accCols, accounts.map((a) => [a.id, a.username, S().roles[a.role] || a.role, a.user_id,
+        a.disabled ? S().stateDisabled : (a.locked ? S().stateLocked : S().stateActive), a.created_at]));
+      const keep = $("ch-acc").value;
+      $("ch-acc").replaceChildren(...accounts.map((a) => { const o = el("option", "", a.username); o.value = String(a.id); return o; }));
+      if (accounts.some((a) => String(a.id) === keep)) $("ch-acc").value = keep;
+    }
+    const wholeOrNull = (input) => (input.value.trim() === "" ? null : Number(input.value));
+    $("acc-create").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const r = await api("POST", "/admin/accounts", { username: $("ac-user").value.trim(), password: $("ac-pass").value,
+        role: $("ac-role").value, user_id: wholeOrNull($("ac-uid")) });
+      $("ac-pass").value = "";
+      say("acc-msg", r.msg || S().done, !!r.msg);
+      if (!r.msg) { $("ac-user").value = ""; $("ac-uid").value = ""; loadAccounts(); loadConsents(); }
+    });
+    async function changeAccount(body) {
+      const r = await api("POST", "/admin/accounts/" + encodeURIComponent($("ch-acc").value), body);
+      say("acc-msg", r.msg || S().done, !!r.msg);
+      if (!r.msg) { loadAccounts(); loadConsents(); }
+    }
+    $("acc-change").addEventListener("submit", (e) => {
+      e.preventDefault();
+      changeAccount({ role: $("ch-role").value, user_id: wholeOrNull($("ch-uid")) });
+    });
+    $("ch-reset").addEventListener("click", () => { changeAccount({ password: $("ch-pass").value }); $("ch-pass").value = ""; });
+    $("ch-disable").addEventListener("click", () => changeAccount({ disabled: true }));
+    $("ch-enable").addEventListener("click", () => changeAccount({ disabled: false }));
+    $("ch-unlock").addEventListener("click", () => changeAccount({ unlock: true }));
+    $("ch-acc").addEventListener("change", () => {          // Pre-fill the role and link of the chosen account.
+      const a = accounts.find((x) => String(x.id) === $("ch-acc").value);
+      if (a) { $("ch-role").value = a.role; $("ch-uid").value = a.user_id === null ? "" : String(a.user_id); }
+    });
+
+    // SECTION: section 2, feature switches.
+    async function loadSwitches() {
+      const r = await api("GET", "/admin/settings");
+      if (r.msg) { say("sw-msg", r.msg, true); return; }
+      const box = $("sw-global");
+      box.replaceChildren(...SWITCHES.map((k) => {
+        const label = el("label", "row");
+        const input = el("input");
+        input.type = "checkbox"; input.checked = !!r.data.global[k]; input.disabled = !isAdmin();
+        input.addEventListener("change", async () => {
+          const res = await api("POST", "/admin/settings", { key: k, on: input.checked, user_id: null });
+          say("sw-msg", res.msg || S().done, !!res.msg);
+          loadSwitches();
+        });
+        label.append(input, el("span", "", S().swEveryone(S().swNames[k])));
+        return label;
+      }));
+      fillTable("sw-table", S().swCols, r.data.users.map((u) => [u.user_id, S().swNames[u.key] || u.key, u.on ? S().swStates.on : S().swStates.off]));
+    }
+    $("sw-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const state = $("sw-state").value;
+      const r = await api("POST", "/admin/settings", { key: $("sw-key").value, on: state === "clear" ? null : state === "on",
+        user_id: wholeOrNull($("sw-uid")) });
+      say("sw-msg", r.msg || S().done, !!r.msg);
+      if (!r.msg) loadSwitches();
+    });
+
+    // SECTION: section 3, API keys.
+    async function loadKeys() {
+      if (!isAdmin()) return;
+      const r = await api("GET", "/admin/api-keys");
+      if (r.msg) { say("key-msg", r.msg, true); return; }
+      fillTable("key-table", S().keyCols, r.data.map((k) => {
+        let action = "";
+        if (!k.revoked) {
+          action = el("button", "btn small", S().revoke);
+          action.type = "button";
+          action.addEventListener("click", async () => {
+            const res = await api("POST", "/admin/api-keys/" + encodeURIComponent(k.id) + "/revoke", {});
+            say("key-msg", res.msg || S().done, !!res.msg);
+            loadKeys();
+          });
+        }
+        return [k.id, k.label, k.prefix, k.revoked ? S().revoked : S().activeKey, k.created_at, action];
+      }));
+    }
+    $("key-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const r = await api("POST", "/admin/api-keys", { label: $("key-label").value.trim() });
+      if (r.msg) { say("key-msg", r.msg, true); return; }
+      say("key-msg", "");
+      $("key-value").textContent = r.data.key;                // Shown once; never stored by the page.
+      $("key-new").hidden = false;
+      $("key-label").value = "";
+      loadKeys();
+    });
+
+    // SECTION: section 4, audit log.
+    async function loadAudit() {
+      const uid = wholeOrNull($("audit-uid"));
+      const r = await api("GET", "/admin/audit" + (uid ? "?user_id=" + encodeURIComponent(uid) : ""));
+      if (r.msg) { fillTable("audit-table", S().auditCols, []); return; }
+      fillTable("audit-table", S().auditCols, r.data.map((a) => [a.at, a.actor, a.role, a.action, a.user_id, a.detail]));
+    }
+    $("audit-form").addEventListener("submit", (e) => { e.preventDefault(); loadAudit(); });
+
+    // SECTION: section 5, consent overview.
+    async function loadConsents() {
+      const r = await api("GET", "/admin/consents");
+      if (r.msg) return;
+      $("consent-version").textContent = S().consentVersion(r.data.notice_version);
+      fillTable("consent-table", S().consentCols, r.data.customers.map((c) => [c.username, c.user_id,
+        S().consentStates[c.state] || c.state, c.notice_version, c.given_at, c.withdrawn_at]));
+    }
+
+    // SECTION: section 6, monitoring and the reset-all button.
+    async function loadMonitoring() {
+      const r = await api("GET", "/admin/monitoring");
+      if (r.msg) { say("mon-msg", r.msg, true); return; }
+      const d = r.data;
+      const stat = (label, value) => { const li = el("li"); li.append(el("strong", "", value), el("span", "", label)); return li; };
+      const items = Object.keys(S().mon).map((k) => stat(S().mon[k], d[k] === null || d[k] === undefined ? S().noValue : num(d[k])));
+      for (const [band, n] of Object.entries(d.alerts_by_level || {})) items.push(stat(S().monAlerts(S().bands[band] || band), num(n)));
+      $("mon-stats").replaceChildren(...items);
+      fillTable("mon-rejected", S().rejCols, Object.entries(d.rejected_by_code || {}).map(([code, n]) => [code, num(n)]));
+    }
+    $("mon-refresh").addEventListener("click", () => { loadMonitoring(); loadAudit(); });
+    $("reset-live").addEventListener("click", async () => {
+      if (!window.confirm(S().resetConfirm)) return;
+      const r = await api("DELETE", "/admin/live");
+      say("mon-msg", r.msg || S().resetDone(num(r.data.deleted)), !!r.msg);
+      loadMonitoring();
+    });
+
+    // SECTION: sign-in state.
+    function showSignedOut() {
+      me = null;
+      $("panel").hidden = true; $("not-staff").hidden = true; $("logout-btn").hidden = true;
+      $("login-card").hidden = false;
+      applyStrings();
+    }
+    function showPanel() {
+      $("login-card").hidden = true;
+      $("logout-btn").hidden = false;
+      applyStrings();
+      if (me.role !== "admin" && me.role !== "analyst") { $("not-staff").hidden = false; return; }
+      document.querySelectorAll(".admin-only").forEach((n) => { n.hidden = !isAdmin(); });
+      $("panel").hidden = false;
+      loadAccounts(); loadSwitches(); loadKeys(); loadAudit(); loadConsents(); loadMonitoring();
+    }
+    $("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = $("login-user").value.trim(), password = $("login-pass").value;
+      if (!username || !password) { say("login-msg", S().signInMissing, true); return; }
+      const r = await api("POST", "/auth/login", { username, password });
+      $("login-pass").value = "";
+      if (r.msg) { say("login-msg", r.msg, true); return; }
+      say("login-msg", "");
+      me = r.data;
+      showPanel();
+    });
+    $("logout-btn").addEventListener("click", async () => { await api("POST", "/auth/logout", {}); showSignedOut(); });
+
+    // SECTION: language toggle. Relabels and redraws the tables in the chosen language.
+    document.querySelectorAll(".lang-toggle button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.lang === lang) return;
+        lang = btn.dataset.lang;
+        if (me && !$("panel").hidden) showPanel(); else applyStrings();
+      });
+    });
+
+    // SECTION: start-up. Ask who is signed in (the session cookie is HttpOnly).
+    (async function start() {
+      applyStrings();
+      const r = await api("GET", "/auth/me");
+      if (r.data) { me = r.data; showPanel(); } else showSignedOut();
+    })();
+  </script>
+</body>
+</html>

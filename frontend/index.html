@@ -56,6 +56,16 @@
       background: transparent; color: var(--brand-text); border: 0; cursor: pointer;
     }
     .lang-toggle button[aria-pressed="true"] { background: var(--brand-text); color: var(--brand); font-weight: 600; }
+    .session-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 10px; font-size: 0.875rem; }
+    .session-row a { color: var(--brand-text); }
+    /* The new sign-in and session blocks use display rules, so make their hidden attribute win. */
+    #login-area[hidden], #session-row[hidden], #wallet-area[hidden], #user-field[hidden],
+    #consent-area[hidden], #customer-actions[hidden] { display: none; }
+    /* SECTION: budget bars (close = amber, over = deep orange) and the customer's own buttons. */
+    .bar-fill.close { background: var(--medium-text); }
+    .bar-fill.over { background: var(--high-text); }
+    .bar-state { font-size: 0.875rem; color: var(--text-soft); }
+    .customer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
     /* SECTION: controls (user and month dropdowns). */
     .controls { display: flex; gap: 12px; padding: 16px; }
@@ -195,6 +205,12 @@
           <button type="button" id="lang-bn" data-lang="bn" aria-pressed="false" lang="bn">বাংলা</button>
         </div>
       </div>
+      <!-- SECTION: who is signed in, admin panel link (staff only) and sign-out. Hidden while signed out. -->
+      <div class="session-row" id="session-row" hidden>
+        <span id="who"></span>
+        <a href="admin" id="admin-link" data-s="adminLink" hidden></a>
+        <button type="button" class="btn small" id="logout-btn" data-s="signOut"></button>
+      </div>
     </header>
 
     <!-- SECTION: tab bar. Wallet (default) and the English-only results tab for judges. -->
@@ -205,14 +221,44 @@
 
     <!-- SECTION: wallet panel. Everything below up to the footer belongs to the wallet tab. -->
     <div role="tabpanel" id="panel-wallet" aria-labelledby="tab-wallet">
-    <!-- SECTION: controls. User and month dropdowns. -->
+    <!-- SECTION: sign-in. Shown while signed out; the wallet below stays hidden until sign-in works. -->
+    <div class="cards" id="login-area" hidden>
+      <section class="card" aria-labelledby="login-title">
+        <h2 id="login-title" data-s="signInTitle"></h2>
+        <form id="login-form" novalidate>
+          <label class="field"><span data-s="usernameLabel"></span>
+            <input type="text" id="login-user" autocomplete="username" maxlength="80" required></label>
+          <label class="field"><span data-s="passwordLabel"></span>
+            <input type="password" id="login-pass" autocomplete="current-password" maxlength="200" required></label>
+          <button type="submit" class="btn" data-s="signInButton"></button>
+        </form>
+        <p class="msg form-error" id="login-msg" aria-live="polite"></p>
+        <p class="soft" data-s="signInNote"></p>
+      </section>
+    </div>
+
+    <!-- SECTION: data notice. A linked customer sees it before any assessment; the text comes from the API. -->
+    <div class="cards" id="consent-area" hidden>
+      <section class="card" aria-labelledby="consent-title">
+        <span class="tag" data-s="simulated"></span>
+        <h2 id="consent-title" data-s="consentTitle"></h2>
+        <p id="consent-text"></p>
+        <p class="soft" id="consent-version"></p>
+        <button type="button" class="btn" id="consent-accept" data-s="consentAccept"></button>
+        <p class="msg form-error" id="consent-msg" aria-live="polite"></p>
+      </section>
+    </div>
+
+    <!-- SECTION: the signed-in wallet. -->
+    <div id="wallet-area" hidden>
+    <!-- SECTION: controls. User and month dropdowns (customers see only the month). -->
     <div class="controls">
-      <label><span data-s="userLabel"></span><select id="user-select"></select></label>
+      <label id="user-field"><span data-s="userLabel"></span><select id="user-select"></select></label>
       <label><span data-s="monthLabel"></span><select id="month-select"></select></label>
     </div>
 
-    <!-- SECTION: demo personas. Each button sets the dropdowns to a scanned user-month. -->
-    <div class="personas" role="group" aria-labelledby="persona-title">
+    <!-- SECTION: demo personas (staff only). Each button sets the dropdowns to a scanned user-month. -->
+    <div class="personas" id="personas" role="group" aria-labelledby="persona-title">
       <h2 id="persona-title" data-s="demoTitle"></h2>
       <div class="persona-row">
         <button type="button" data-persona="0" data-s="persona0" aria-pressed="false"></button>
@@ -235,6 +281,26 @@
         <p id="risk-text"></p>
         <!-- SECTION: estimated minimum balance. Only shown when the API sends it. -->
         <p class="soft" id="min-balance" hidden></p>
+        <!-- SECTION: for staff: is this a linked customer or an unlinked simulated fixture? -->
+        <p class="soft" id="subject-line" hidden></p>
+      </section>
+
+      <!-- SECTION: add a live transaction (customer for own wallet, or admin). Scored on this machine. -->
+      <section class="card" id="live-card" aria-labelledby="live-title" hidden>
+        <span class="tag" data-s="simulated"></span>
+        <h2 id="live-title" data-s="liveTitle"></h2>
+        <p class="soft" data-s="liveNote"></p>
+        <form id="live-form" novalidate>
+          <div class="field-row">
+            <label class="field"><span data-s="liveDay"></span>
+              <input type="number" id="lv-day" inputmode="numeric" min="1" max="20" step="1"></label>
+            <label class="field"><span data-s="liveAmount"></span>
+              <input type="number" id="lv-amount" inputmode="numeric" min="1" max="200000" step="1"></label>
+          </div>
+          <label class="field"><span data-s="liveType"></span><select id="lv-type"></select></label>
+          <button type="submit" class="btn" id="lv-send" data-s="liveButton"></button>
+        </form>
+        <div class="result" id="live-out" aria-live="polite"></div>
       </section>
 
       <!-- SECTION: balance chart. Filled in by the chart code below. -->
@@ -267,6 +333,23 @@
           <ul class="bars" id="sum-week"></ul>
           <p class="summary-text" id="sum-text"></p>
         </div>
+      </section>
+
+      <!-- SECTION: monthly budgets per spending type. Arithmetic (a rule), not AI. -->
+      <section class="card" aria-labelledby="budget-title">
+        <span class="tag" data-s="ruleTag"></span>
+        <h2 id="budget-title" data-s="budgetTitle"></h2>
+        <p class="soft" data-s="budgetNote"></p>
+        <p class="msg soft" id="budget-msg" aria-live="polite"></p>
+        <ul class="bars" id="budget-bars"></ul>
+        <details id="budget-own" hidden>
+          <summary data-s="budgetOwnTitle"></summary>
+          <form id="budget-form" novalidate>
+            <div id="budget-fields"></div>
+            <p class="soft" data-s="budgetOwnNote"></p>
+            <button type="submit" class="btn" data-s="budgetSave"></button>
+          </form>
+        </details>
       </section>
 
       <!-- SECTION: savings planner. Goal and months, checked in the page before anything is sent. -->
@@ -309,7 +392,14 @@
     <footer class="footer" id="footer" hidden>
       <p class="training" id="training" data-s="trainingBanner" hidden></p>
       <p class="disclaimer" id="disclaimer"></p>
+      <!-- SECTION: the customer's own controls: reset live data, withdraw consent. -->
+      <div class="customer-actions" id="customer-actions" hidden>
+        <button type="button" class="btn small" id="live-reset" data-s="liveReset"></button>
+        <button type="button" class="btn small" id="consent-withdraw" data-s="consentWithdraw"></button>
+        <p class="msg soft" id="customer-msg" aria-live="polite"></p>
+      </div>
     </footer>
+    </div>
     </div>
 
     <!-- SECTION: results panel. English only by design; filled from GET /results the first time it opens. -->
@@ -334,6 +424,55 @@
         tabResults: "Results (for judges)",
         simulated: "Simulated data",
         langGroup: "Language",
+        signInTitle: "Sign in",
+        usernameLabel: "Username",
+        passwordLabel: "Password",
+        signInButton: "Sign in",
+        signInNote: "Accounts are made by an admin. All data is simulated.",
+        signInMissing: "Please enter your username and password.",
+        signOut: "Sign out",
+        signedInAs: (name, role) => "Signed in as " + name + " (" + role + ")",
+        roles: { admin: "admin", analyst: "analyst", customer: "customer", machine: "API key" },
+        adminLink: "Admin panel",
+        noUser: "No user is linked to this account yet. Please ask an admin.",
+        consentTitle: "Before we start: how your data is used",
+        consentAccept: "I agree",
+        consentVersion: (v) => "Notice version " + v,
+        consentWithdraw: "Withdraw my consent",
+        subject: { linked_customer: "This wallet belongs to a linked customer account.",
+                   simulated_fixture: "Simulated fixture: no customer account is linked to this user." },
+        liveTitle: "Add a transaction",
+        liveNote: "Add a simulated transaction for this month. The risk is checked again on this machine. Nothing moves money.",
+        liveDay: "Day (1-20)",
+        liveAmount: "Amount in BDT",
+        liveType: "Type",
+        liveButton: "Add and check again",
+        liveDayInvalid: "Please enter the day as a whole number from 1 to 20.",
+        liveAmountInvalid: "Please enter the amount as a whole number from 1 to 200,000 BDT.",
+        types: { salary_or_income: "Income received", add_money: "Add money (bank or card)",
+                 merchant_payment: "Shop payment", bill_payment: "Bill payment", mobile_recharge: "Mobile recharge",
+                 send_money_family: "Send money to family", cash_out: "Cash-out" },
+        liveScored: (ms) => "Scored on this machine in " + ms + " ms (simulated data).",
+        liveBand: (a, b) => "Risk before: " + a + ". Risk now: " + b + ".",
+        liveBalance: (a, b) => "Day-20 balance before: " + a + ". Now: " + b + ".",
+        liveFee: (fee) => "Cash-out fee added: " + fee + " (placeholder rate).",
+        liveReset: "Reset my live data",
+        liveResetDone: (n) => "Removed " + n + " live transactions.",
+        unusualTitle: "Unusual for you?",
+        ruleTag: "A rule, not AI",
+        budgetTitle: "Monthly budgets",
+        budgetNote: "Spending on days 1-20 against a monthly budget per type. Simulated data.",
+        budgetOff: "Budget warnings are turned off.",
+        budgetLine: (spent, budget) => spent + " of " + budget,
+        budgetNone: (spent) => spent + " spent; no budget yet, you can set your own below",
+        budgetState: { ok: "within budget", close: "close to budget", over: "over budget", no_budget: "" },
+        budgetSource: { yours: "your budget", median_earlier_months: "your usual month (median of earlier months)" },
+        budgetPace: (x) => "At this pace, about " + x + " by day 30.",
+        budgetOwnTitle: "Set your own budgets",
+        budgetOwnNote: "Leave a box empty to keep it as it is; enter 0 to go back to the usual-month budget.",
+        budgetSave: "Save budgets",
+        budgetSaved: "Budgets saved.",
+        budgetInvalid: "Please use whole numbers from 0 to 500,000.",
         userLabel: "User",
         monthLabel: "Month",
         demoTitle: "Try a demo case",
@@ -412,6 +551,55 @@
         tabResults: "ফলাফল (বিচারকদের জন্য)",
         simulated: "সিমুলেটেড ডেটা",
         langGroup: "ভাষা",
+        signInTitle: "সাইন ইন করুন",
+        usernameLabel: "ইউজারনেম",
+        passwordLabel: "পাসওয়ার্ড",
+        signInButton: "সাইন ইন",
+        signInNote: "অ্যাকাউন্ট তৈরি করেন একজন অ্যাডমিন। সব ডেটা সিমুলেটেড।",
+        signInMissing: "অনুগ্রহ করে ইউজারনেম ও পাসওয়ার্ড লিখুন।",
+        signOut: "সাইন আউট",
+        signedInAs: (name, role) => name + " হিসেবে সাইন ইন করা আছে (" + role + ")",
+        roles: { admin: "অ্যাডমিন", analyst: "বিশ্লেষক", customer: "গ্রাহক", machine: "API কী" },
+        adminLink: "অ্যাডমিন প্যানেল",
+        noUser: "এই অ্যাকাউন্টের সাথে এখনো কোনো ব্যবহারকারী যুক্ত নেই। অনুগ্রহ করে একজন অ্যাডমিনকে জানান।",
+        consentTitle: "শুরুর আগে: আপনার ডেটা কীভাবে ব্যবহার হয়",
+        consentAccept: "আমি সম্মত",
+        consentVersion: (v) => "নোটিশ সংস্করণ " + v,
+        consentWithdraw: "আমার সম্মতি তুলে নিন",
+        subject: { linked_customer: "এই ওয়ালেটটি একটি যুক্ত গ্রাহক অ্যাকাউন্টের।",
+                   simulated_fixture: "সিমুলেটেড নমুনা: এই ব্যবহারকারীর সাথে কোনো গ্রাহক অ্যাকাউন্ট যুক্ত নেই।" },
+        liveTitle: "একটি লেনদেন যোগ করুন",
+        liveNote: "এই মাসের জন্য একটি সিমুলেটেড লেনদেন যোগ করুন। ঝুঁকি এই কম্পিউটারেই আবার যাচাই হবে। কোনো টাকা সরানো হয় না।",
+        liveDay: "দিন (১-২০)",
+        liveAmount: "পরিমাণ (টাকা)",
+        liveType: "ধরন",
+        liveButton: "যোগ করে আবার যাচাই করুন",
+        liveDayInvalid: "অনুগ্রহ করে দিনটি ১ থেকে ২০-এর মধ্যে একটি পূর্ণ সংখ্যায় লিখুন।",
+        liveAmountInvalid: "অনুগ্রহ করে পরিমাণটি ১ থেকে ২,০০,০০০ টাকার মধ্যে একটি পূর্ণ সংখ্যায় লিখুন।",
+        types: { salary_or_income: "আয় গ্রহণ", add_money: "অ্যাড মানি (ব্যাংক বা কার্ড)",
+                 merchant_payment: "দোকানে পেমেন্ট", bill_payment: "বিল পরিশোধ", mobile_recharge: "মোবাইল রিচার্জ",
+                 send_money_family: "পরিবারে টাকা পাঠানো", cash_out: "ক্যাশ আউট" },
+        liveScored: (ms) => "এই কম্পিউটারে " + ms + " মিলিসেকেন্ডে মূল্যায়ন করা হয়েছে (সিমুলেটেড ডেটা)।",
+        liveBand: (a, b) => "আগের ঝুঁকি: " + a + "। এখনকার ঝুঁকি: " + b + "।",
+        liveBalance: (a, b) => "২০তম দিনের ব্যালেন্স আগে: " + a + "। এখন: " + b + "।",
+        liveFee: (fee) => "ক্যাশ আউট ফি যোগ হয়েছে: " + fee + " (অস্থায়ী হার)।",
+        liveReset: "আমার লাইভ ডেটা মুছে দিন",
+        liveResetDone: (n) => n + "টি লাইভ লেনদেন মুছে দেওয়া হয়েছে।",
+        unusualTitle: "আপনার জন্য অস্বাভাবিক?",
+        ruleTag: "একটি নিয়ম, AI নয়",
+        budgetTitle: "মাসিক বাজেট",
+        budgetNote: "১-২০ দিনের খরচ, প্রতিটি ধরনের মাসিক বাজেটের সাথে তুলনা। সিমুলেটেড ডেটা।",
+        budgetOff: "বাজেট সতর্কবার্তা বন্ধ আছে।",
+        budgetLine: (spent, budget) => budget + "-এর মধ্যে " + spent,
+        budgetNone: (spent) => spent + " খরচ হয়েছে; এখনো বাজেট নেই, নিচে নিজের বাজেট দিতে পারেন",
+        budgetState: { ok: "বাজেটের মধ্যে", close: "বাজেটের কাছাকাছি", over: "বাজেট ছাড়িয়ে গেছে", no_budget: "" },
+        budgetSource: { yours: "আপনার দেওয়া বাজেট", median_earlier_months: "আপনার স্বাভাবিক মাস (আগের মাসগুলোর মধ্যমা)" },
+        budgetPace: (x) => "এই হারে ৩০তম দিনে প্রায় " + x + " হবে।",
+        budgetOwnTitle: "নিজের বাজেট দিন",
+        budgetOwnNote: "যে ঘর বদলাতে চান না তা খালি রাখুন; স্বাভাবিক মাসের বাজেটে ফিরতে ০ লিখুন।",
+        budgetSave: "বাজেট সংরক্ষণ করুন",
+        budgetSaved: "বাজেট সংরক্ষণ করা হয়েছে।",
+        budgetInvalid: "অনুগ্রহ করে ০ থেকে ৫,০০,০০০-এর মধ্যে পূর্ণ সংখ্যা দিন।",
         userLabel: "ব্যবহারকারী",
         monthLabel: "মাস",
         demoTitle: "একটি ডেমো দেখুন",
@@ -563,8 +751,14 @@
     const MONTH_ORDER = [4, 5, 0, 1, 2, 3];   // Demo months first, then training months.
     const TRAINING_MONTHS = [0, 1, 2, 3];
     let lang = "en";
+    let me = null;                            // GET /auth/me: who is signed in (null while signed out).
     let requestCounter = 0;                   // Forecast requests.
-    const counters = { summary: 0, savings: 0, whatif: 0, results: 0 };   // One counter per new section.
+    const counters = { summary: 0, savings: 0, whatif: 0, results: 0, budgets: 0, live: 0 };   // One counter per new section.
+    let lastBudgets = null;                   // Last budget answer, redrawn when the language changes.
+    // The 7 transaction types the live form offers (same order as the API's list).
+    const LIVE_TYPES = ["merchant_payment", "bill_payment", "mobile_recharge", "send_money_family", "cash_out",
+      "salary_or_income", "add_money"];
+    const BUDGET_TYPES = ["merchant_payment", "bill_payment", "mobile_recharge", "send_money_family", "cash_out"];
     let resultsData = null;                   // GET /results, kept in memory after the first successful load.
     let lastForecast = null;                  // Kept so the chart text can be redrawn without a new request.
     let lastSavingsBody = null;               // Last savings request, re-sent when the language changes.
@@ -612,7 +806,9 @@
       $("status").classList.toggle("error", !!isError);
     }
     // Builds a short friendly message from the API's error JSON; never shows raw text.
+    // A 401 means the session ended (signed out elsewhere or expired): show the sign-in screen.
     async function errorMessage(response) {
+      if (response.status === 401 && me) showSignedOut();
       try {
         const body = await response.json();
         const msg = lang === "bn" ? body.error_bn : body.error;
@@ -623,11 +819,13 @@
 
     // SECTION: request helper for the new sections. Returns { data } or { msg }, or null when a newer
     // request for the same section has started (the late answer is ignored).
-    async function fetchJson(section, url, body) {
+    // An optional method (PUT, DELETE) overrides the default: POST with a body, GET without.
+    async function fetchJson(section, url, body, method) {
       const mine = ++counters[section];
       const current = () => mine === counters[section];
       try {
-        const options = body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : undefined;
+        const options = { method: method || (body ? "POST" : "GET") };
+        if (body) { options.headers = { "Content-Type": "application/json" }; options.body = JSON.stringify(body); }
         const response = await fetch(url, options);
         if (!current()) return null;
         if (!response.ok) {
@@ -649,6 +847,15 @@
       $("lang-group").setAttribute("aria-label", S().langGroup);
       $("lang-en").setAttribute("aria-pressed", String(lang === "en"));
       $("lang-bn").setAttribute("aria-pressed", String(lang === "bn"));
+      if (me) $("who").textContent = S().signedInAs(me.username, S().roles[me.role] || me.role);
+      // Live form types, budget field labels and the data notice follow the language.
+      for (const opt of $("lv-type").options) opt.textContent = S().types[opt.value];
+      document.querySelectorAll("[data-type]").forEach((node) => { node.textContent = S().types[node.dataset.type]; });
+      if (me && me.consent) {
+        $("consent-text").textContent = me.consent.notice[lang];
+        $("consent-version").textContent = S().consentVersion(me.consent.notice_version);
+      }
+      if (lastBudgets) renderBudgets(lastBudgets);
       // Relabel dropdown options in the chosen language (values stay the same).
       for (const opt of $("user-select").options) opt.textContent = S().userN(num(Number(opt.value)));
       for (const opt of $("month-select").options) {
@@ -696,6 +903,8 @@
           $("user-select").appendChild(opt);
         }
         if (users.length) return true;
+        showStatus(S().noUser, true);                          // A customer account with no linked user.
+        return false;
       } catch (_e) { /* Network or format problem: show the generic message below. */ }
       showStatus(S().errorFallback, true);
       return false;
@@ -742,6 +951,7 @@
       setupWhatif(d);
       $("training").hidden = !d.month_in_training;
       $("disclaimer").textContent = d.disclaimer;
+      $("live-card").hidden = !canWrite();
       $("cards").hidden = false;
       $("footer").hidden = false;
     }
@@ -755,6 +965,10 @@
       const min = d.predicted_min_balance;
       $("min-balance").hidden = !min;
       if (min) $("min-balance").textContent = S().minBalance(taka(min.amount_bdt), taka(min.typical_error_bdt));
+      // Staff see whether this is a linked customer or an unlinked simulated fixture.
+      const subject = me && me.role !== "customer" && d.data_subject ? S().subject[d.data_subject] : "";
+      $("subject-line").textContent = subject || "";
+      $("subject-line").hidden = !subject;
     }
 
     // SECTION: chart. Inline SVG: balance line days 1-20, dashed floor, shaded days 21-30, axis labels.
@@ -1210,11 +1424,15 @@
       $("wi-balance").disabled = true; $("wi-reset").disabled = true; $("wi-send").disabled = true;
       $("wi-out").replaceChildren();
       for (const f of WHATIF_FIELDS) $("wi-" + f.key).value = "";
+      counters.live++; counters.budgets++;
+      $("live-out").replaceChildren();
+      lastBudgets = null;
+      $("budget-bars").replaceChildren();
       showSliderValues();
     }
 
     // SECTION: events. Dropdowns reload everything; the language toggle relabels and re-fetches.
-    function onSelectionChange() { resetSections(); loadForecast(); loadSummary(); }
+    function onSelectionChange() { resetSections(); loadForecast(); loadSummary(); loadBudgets(); }
     $("user-select").addEventListener("change", onSelectionChange);
     $("month-select").addEventListener("change", onSelectionChange);
     document.querySelectorAll(".lang-toggle button").forEach((btn) => {
@@ -1222,9 +1440,11 @@
         if (btn.dataset.lang === lang) return;
         lang = btn.dataset.lang;
         applyStrings();
+        if (!me || $("wallet-area").hidden) return;     // Signed out (or not yet in the wallet): labels only.
         if (lastForecast) renderChart(lastForecast);   // Chart labels follow the language at once.
         loadForecast();
         loadSummary();
+        counters.live++; $("live-out").replaceChildren();   // The live result was in the old language.
         // Re-ask the planner and what-if in the new language; drop page messages in the old one.
         if (lastSavingsBody) sendSavings(lastSavingsBody); else { counters.savings++; $("savings-out").replaceChildren(); }
         if (wi.lastOverrides) sendWhatif(wi.lastOverrides); else { counters.whatif++; $("wi-out").replaceChildren(); }
@@ -1259,17 +1479,208 @@
     $("user-select").addEventListener("change", clearPersona);    // A manual change clears the highlight.
     $("month-select").addEventListener("change", clearPersona);
 
-    // SECTION: start-up. Build the month list and what-if fields, label everything, load users, then the data.
+    // SECTION: who may add live data and set budgets: a customer (own wallet) or an admin. Analysts only read.
+    const canWrite = () => !!me && (me.role === "customer" || me.role === "admin");
+
+    // SECTION: live form and budget fields. Built once; labels come from STRINGS in applyStrings.
+    function buildLiveForm() {
+      for (const t of LIVE_TYPES) { const opt = el("option"); opt.value = t; $("lv-type").appendChild(opt); }
+      for (const t of BUDGET_TYPES) {
+        const label = el("label", "field");
+        const caption = el("span");
+        caption.dataset.type = t;
+        const input = el("input");
+        input.type = "number"; input.id = "bg-" + t; input.min = "0"; input.max = "500000"; input.step = "1";
+        input.inputMode = "numeric";
+        label.append(caption, input);
+        $("budget-fields").appendChild(label);
+      }
+    }
+
+    // SECTION: budget bars. Spent so far against the monthly budget, a state word, and the day-30 pace line.
+    // Bar widths are display scaling only; every amount shown is the API's.
+    function renderBudgets(b) {
+      const list = $("budget-bars");
+      if (!b.enabled) { list.replaceChildren(); $("budget-msg").textContent = S().budgetOff; return; }
+      $("budget-msg").textContent = "";
+      list.replaceChildren(...b.bars.map((bar) => {
+        const li = el("li");
+        const row = el("div", "bar-row");
+        row.append(el("span", "", S().types[bar.type]),
+          el("span", "bar-amount", bar.budget_bdt ? S().budgetLine(taka(bar.spent_bdt), taka(bar.budget_bdt)) : S().budgetNone(taka(bar.spent_bdt))));
+        const track = el("div", "bar-track");
+        track.setAttribute("aria-hidden", "true");
+        const fill = el("div", "bar-fill" + (bar.state === "close" || bar.state === "over" ? " " + bar.state : ""));
+        fill.style.width = (bar.budget_bdt ? Math.min(1, bar.spent_bdt / bar.budget_bdt) * 100 : 0) + "%";
+        track.appendChild(fill);
+        const words = [S().budgetState[bar.state], bar.budget_source ? S().budgetSource[bar.budget_source] : "",
+          S().budgetPace(taka(bar.pace_day30_bdt))].filter(Boolean).join(" · ");
+        li.append(row, track, el("p", "bar-state", words));
+        return li;
+      }));
+    }
+    async function loadBudgets() {
+      $("budget-own").hidden = !canWrite();
+      const r = await fetchJson("budgets", "/users/" + encodeURIComponent(selectedUser()) + "/budgets?month=" +
+        encodeURIComponent(selectedMonth()));
+      if (!r) return;
+      if (r.msg) { lastBudgets = null; $("budget-bars").replaceChildren(); $("budget-msg").textContent = r.msg; return; }
+      lastBudgets = r.data;
+      renderBudgets(r.data);
+    }
+    $("budget-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const body = {};
+      for (const t of BUDGET_TYPES) {
+        const raw = $("bg-" + t).value.trim();
+        if (raw === "") continue;                               // Empty: leave this budget as it is.
+        const n = Number(raw);
+        if (!Number.isInteger(n) || n < 0 || n > 500000) { $("budget-msg").textContent = S().budgetInvalid; return; }
+        body[t] = n === 0 ? null : n;                            // 0: back to the usual-month budget.
+      }
+      if (!Object.keys(body).length) return;
+      const r = await fetchJson("budgets", "/users/" + encodeURIComponent(selectedUser()) + "/budgets",
+        { budgets: body }, "PUT");
+      if (!r) return;
+      if (r.msg) { $("budget-msg").textContent = r.msg; return; }
+      for (const t of BUDGET_TYPES) $("bg-" + t).value = "";
+      await loadBudgets();
+      $("budget-msg").textContent = S().budgetSaved;
+    });
+
+    // SECTION: live transaction. Checked in the page, sent with a fresh idempotency key, and the answer
+    // redraws the band, reasons, chart, suggestions, budgets and the unusual note without a reload.
+    function newKey() {
+      return window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + "-" + Math.random();
+    }
+    $("live-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const day = wholeIn($("lv-day"), 1, 20);
+      const amount = wholeIn($("lv-amount"), 1, 200000);
+      const out = $("live-out");
+      if (day === null) { out.replaceChildren(el("p", "form-error", S().liveDayInvalid)); return; }
+      if (amount === null) { out.replaceChildren(el("p", "form-error", S().liveAmountInvalid)); return; }
+      $("lv-send").disabled = true;
+      out.replaceChildren(el("p", "soft", S().loading));
+      const r = await fetchJson("live", "/live/transactions", { user_id: Number(selectedUser()),
+        month: Number(selectedMonth()), day, type: $("lv-type").value, amount, idempotency_key: newKey(), lang });
+      $("lv-send").disabled = false;
+      if (!r) return;
+      if (r.msg) { out.replaceChildren(el("p", "form-error", r.msg)); return; }
+      const d = r.data;
+      lastForecast = d.assessment;
+      wi.key = null;                                            // The what-if starts again from the new balance.
+      render(d.assessment);
+      if (d.budgets) { lastBudgets = d.budgets; renderBudgets(d.budgets); }
+      const parts = [el("p", "soft", S().liveScored(num(d.ms))),
+        el("p", "", S().liveBand(S().band[d.changed.band_before], S().band[d.changed.band_after])),
+        el("p", "", S().liveBalance(taka(d.changed.balance_day20_before), taka(d.changed.balance_day20_after)))];
+      if (d.transaction.fee_bdt > 0) parts.push(el("p", "soft", S().liveFee(taka(d.transaction.fee_bdt))));
+      if (d.unusual && d.unusual.enabled && d.unusual.text) {
+        const note = el("div", "card note");
+        note.append(el("h3", "", S().unusualTitle), el("p", "", d.unusual.text));
+        parts.push(note);
+      }
+      out.replaceChildren(...parts);
+      loadSummary();                                            // Spending by category changed too.
+    });
+
+    // SECTION: the customer's own controls. Reset live data; withdraw consent (back to the notice).
+    $("live-reset").addEventListener("click", async () => {
+      const r = await fetchJson("live", "/me/live", undefined, "DELETE");
+      if (!r) return;
+      $("customer-msg").textContent = r.msg || S().liveResetDone(num(r.data.deleted));
+      $("live-out").replaceChildren();
+      wi.key = null;
+      loadForecast(); loadSummary(); loadBudgets();
+    });
+    $("consent-withdraw").addEventListener("click", async () => {
+      const r = await fetchJson("live", "/me/consent/withdraw", {});
+      if (!r) return;
+      if (r.msg) { $("customer-msg").textContent = r.msg; return; }
+      me = r.data;
+      showWallet();
+    });
+    $("consent-accept").addEventListener("click", async () => {
+      const r = await fetchJson("live", "/me/consent", { notice_version: me.consent.notice_version });
+      if (!r) return;
+      if (r.msg) { $("consent-msg").textContent = r.msg; return; }
+      $("consent-msg").textContent = "";
+      me = r.data;
+      showWallet();
+    });
+
+    // SECTION: sign-in state. Signed out: only the sign-in card (the results tab stays public).
+    function showSignedOut() {
+      me = null;
+      requestCounter++; counters.summary++;                    // Drop any answers still on their way.
+      resetSections();
+      lastForecast = null;
+      $("user-select").replaceChildren();
+      $("wallet-area").hidden = true;
+      $("consent-area").hidden = true;
+      $("session-row").hidden = true;
+      $("login-area").hidden = false;
+      showStatus("");
+    }
+    // Signed in: customers see only their own wallet (no persona buttons, no user picker); staff keep both.
+    async function showWallet() {
+      const isCustomer = me.role === "customer";
+      $("login-area").hidden = true;
+      $("session-row").hidden = false;
+      $("personas").hidden = isCustomer;
+      $("user-field").hidden = isCustomer;
+      $("admin-link").hidden = isCustomer;
+      $("customer-actions").hidden = !isCustomer;
+      // A linked customer without a current consent sees the data notice first, and nothing else.
+      const needsConsent = me.consent && me.consent.required && !me.consent.given;
+      $("consent-area").hidden = !needsConsent;
+      $("wallet-area").hidden = needsConsent;
+      applyStrings();
+      if (needsConsent) { resetSections(); return; }
+      if (!$("user-select").options.length && !(await loadUsers())) return;
+      applyStrings();
+      loadForecast();
+      loadSummary();
+      loadBudgets();
+    }
+    // Asks the server who is signed in (the session cookie is HttpOnly, so the page cannot read it).
+    async function loadMe() {
+      try {
+        const response = await fetch("/auth/me");
+        me = response.ok ? await response.json() : null;
+      } catch (_e) { me = null; }
+      return me;
+    }
+    $("login-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const username = $("login-user").value.trim(), password = $("login-pass").value;
+      if (!username || !password) { $("login-msg").textContent = S().signInMissing; return; }
+      $("login-msg").textContent = "";
+      try {
+        const response = await fetch("/auth/login", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }) });
+        if (!response.ok) { $("login-msg").textContent = await errorMessage(response); return; }
+        me = await response.json();
+      } catch (_e) { $("login-msg").textContent = S().errorFallback; return; }
+      $("login-pass").value = "";                              // Never keep the password in the page.
+      showWallet();
+    });
+    $("logout-btn").addEventListener("click", async () => {
+      try {
+        await fetch("/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      } catch (_e) { /* Signed out locally either way. */ }
+      showSignedOut();
+    });
+
+    // SECTION: start-up. Build the month list and what-if fields, label everything, then ask who is signed in.
     (async function start() {
       buildMonths();
       buildWhatifFields();
+      buildLiveForm();
       $("results-note").textContent = STRINGS.results.note;
       applyStrings();
-      if (await loadUsers()) {
-        applyStrings();
-        loadForecast();
-        loadSummary();
-      }
+      if (await loadMe()) showWallet(); else showSignedOut();
     })();
   </script>
 </body>

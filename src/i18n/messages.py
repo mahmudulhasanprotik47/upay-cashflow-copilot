@@ -139,6 +139,86 @@ MESSAGES = {
     "error_server": {
         "en": "Something went wrong on our side. Please try again later.",
         "bn": "আমাদের দিকে একটি সমস্যা হয়েছে। অনুগ্রহ করে পরে আবার চেষ্টা করুন।"},
+
+    # --- Phase 2A: sign-in, access and rate-limit errors (key = "error_" + API error code) ---
+    "error_auth_required": {
+        "en": "Please sign in to continue.",
+        "bn": "চালিয়ে যেতে অনুগ্রহ করে সাইন ইন করুন।"},
+    "error_forbidden": {
+        "en": "You do not have access to this.",
+        "bn": "এটি দেখার বা বদলানোর অনুমতি আপনার নেই।"},
+    "error_bad_credentials": {
+        "en": "The username or password is not correct.",
+        "bn": "ইউজারনেম বা পাসওয়ার্ড সঠিক নয়।"},
+    "error_locked": {
+        "en": "Too many wrong passwords. This account is paused for a few minutes; please try again later.",
+        "bn": "অনেকবার ভুল পাসওয়ার্ড দেওয়া হয়েছে। এই অ্যাকাউন্ট কয়েক মিনিটের জন্য বন্ধ আছে; পরে আবার চেষ্টা করুন।"},
+    "error_rate_limited": {
+        "en": "Too many requests. Please wait a moment and try again.",
+        "bn": "অনেক বেশি অনুরোধ এসেছে। একটু অপেক্ষা করে আবার চেষ্টা করুন।"},
+    "error_invalid_api_key": {
+        "en": "The API key is not valid.",
+        "bn": "API কী সঠিক নয়।"},
+    "error_json_required": {
+        "en": "Please send the details as JSON.",
+        "bn": "অনুগ্রহ করে তথ্যগুলো JSON আকারে পাঠান।"},
+    "error_weak_password": {
+        "en": "Passwords need at least 10 characters.",
+        "bn": "পাসওয়ার্ডে অন্তত ১০টি অক্ষর থাকতে হবে।"},
+    "error_conflict": {
+        "en": "That username or linked user is already in use, or the change is not allowed.",
+        "bn": "এই ইউজারনেম বা যুক্ত ব্যবহারকারী আগে থেকেই ব্যবহৃত হচ্ছে, অথবা এই পরিবর্তনটি করা যায় না।"},
+
+    # --- Phase 2B: consent and live-transaction errors ---
+    "error_consent_required": {
+        "en": "Please read and accept the data notice first.",
+        "bn": "অনুগ্রহ করে আগে ডেটা বিষয়ক নোটিশটি পড়ে সম্মতি দিন।"},
+    "error_feature_disabled": {
+        "en": "This feature is turned off right now.",
+        "bn": "এই সুবিধাটি এখন বন্ধ আছে।"},
+    "error_unknown_type": {
+        "en": "That transaction type is not known.",
+        "bn": "এই ধরনের লেনদেন চেনা নেই।"},
+    "error_amount_out_of_range": {
+        "en": "The amount must be a whole number above zero and within the allowed limit.",
+        "bn": "পরিমাণটি শূন্যের বেশি একটি পূর্ণ সংখ্যা হতে হবে এবং অনুমোদিত সীমার মধ্যে থাকতে হবে।"},
+    "error_day_after_prediction_day": {
+        "en": "The day must be on or before the prediction day of the month.",
+        "bn": "দিনটি মাসের পূর্বাভাসের দিন বা তার আগে হতে হবে।"},
+    "error_insufficient_balance": {
+        "en": "This payment is more than the balance available on that day or on a later day before the "
+              "prediction day.",
+        "bn": "এই পেমেন্টটি সেই দিনের বা পূর্বাভাসের দিনের আগের কোনো পরের দিনের ব্যালেন্সের চেয়ে বেশি।"},
+    "error_duplicate": {
+        "en": "This transaction was already received.",
+        "bn": "এই লেনদেনটি আগেই গ্রহণ করা হয়েছে।"},
+
+    # --- Phase 2B: data notice shown before a customer's first assessment ---
+    "consent_notice": {
+        "en": "What we look at: the transactions and balances in your simulated wallet, to estimate whether "
+              "your balance may run low before the month ends, to compare spending with your budgets, and to "
+              "note transactions that are unusual for you. What we never do: move money, act on your behalf, "
+              "or sell or share your data. Every suggestion is only a suggestion; you decide. You can withdraw "
+              "this consent at any time, and then no new assessment is made. All data in this prototype is "
+              "simulated.",
+        "bn": "আমরা যা দেখি: আপনার সিমুলেটেড ওয়ালেটের লেনদেন ও ব্যালেন্স, যাতে মাস শেষের আগে ব্যালেন্স কমে "
+              "যেতে পারে কিনা অনুমান করা যায়, খরচকে আপনার বাজেটের সাথে মেলানো যায়, এবং আপনার জন্য অস্বাভাবিক "
+              "লেনদেন চিহ্নিত করা যায়। আমরা যা কখনো করি না: টাকা সরানো, আপনার হয়ে কোনো কাজ করা, অথবা আপনার "
+              "ডেটা বিক্রি বা শেয়ার করা। প্রতিটি পরামর্শ শুধুই পরামর্শ; সিদ্ধান্ত আপনার। আপনি যেকোনো সময় এই "
+              "সম্মতি তুলে নিতে পারেন, তখন আর নতুন কোনো মূল্যায়ন করা হবে না। এই প্রোটোটাইপের সব ডেটা সিমুলেটেড।"},
+
+    # --- Phase 2B: unusual-activity note (a pattern check, never an accusation) ---
+    "unusual_yes": {
+        "en": "This transaction is unusual for you: it differs from your own pattern in earlier months. "
+              "This is a pattern check on simulated data, not a judgement.",
+        "bn": "এই লেনদেনটি আপনার জন্য অস্বাভাবিক: এটি আগের মাসগুলোতে আপনার নিজের ধরনের থেকে আলাদা। "
+              "এটি সিমুলেটেড ডেটার উপর একটি প্যাটার্ন যাচাই, কোনো রায় নয়।"},
+    "unusual_no": {
+        "en": "This transaction looks like your usual pattern in earlier months.",
+        "bn": "এই লেনদেনটি আগের মাসগুলোতে আপনার স্বাভাবিক ধরনের মতোই দেখাচ্ছে।"},
+    "unusual_unavailable": {
+        "en": "The unusual-activity check is not available right now.",
+        "bn": "অস্বাভাবিক লেনদেন যাচাই এখন পাওয়া যাচ্ছে না।"},
 }
 
 # Reasons: what the model looked at, in the user's own numbers (en, bn, preview sample value).

@@ -219,3 +219,8 @@ __marimo__/
 data/*
 !data/.gitkeep
 .claude/
+
+# Phase 2: the app database and its WAL side files (never committed).
+data/copilot.db
+data/copilot.db-wal
+data/copilot.db-shm
