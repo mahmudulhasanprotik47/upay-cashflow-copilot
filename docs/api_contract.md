@@ -1471,3 +1471,32 @@ never contains a stack trace.
 - `422`: input fails validation (bad month, bad `lang`, bad body, bad what-if value, bad JSON).
   `error`: "Some details are not valid. Please check them and try again."
 - `500`: anything unexpected. `error`: "Something went wrong on our side. Please try again later." **Not tested.**
+
+## Phase 2 additions (sign-in, live data, consent, integration)
+
+All data is simulated. Every error body is `{code, error, error_bn}`; the old `error` and `error_bn`
+fields are unchanged. The original endpoints keep their paths and fields but now need a session cookie
+or an `X-API-Key` header. They add new fields only:
+- forecast: `level`, `model_target`, `data_subject`
+- each reason: `code`, `factor_name`, `rank`, `effect`, `strength`
+- buffer: `source: "rule"`
+
+No answer the pages use contains a probability or a threshold (self-check 23).
+
+| Endpoint | Who | What |
+|---|---|---|
+| `GET /`, `GET /admin`, `GET /health`, `GET /results`, `GET /results/details`, `GET /evidence` | public | Pages; results (`/results` adds `risk_factors`); model details read from artifact files; survey file, or 404 |
+| `POST /auth/login` `{username, password}` | public | Sets an HttpOnly, SameSite=Strict cookie. 401 `bad_credentials`, 423 `locked`, 429 `rate_limited` |
+| `POST /auth/logout`, `GET /auth/me` | session | Sign out; identity, role, linked `user_id`, consent state and notice text |
+| `POST /me/consent` `{notice_version}`, `POST /me/consent/withdraw` | customer | Give or withdraw consent |
+| `GET /me/export`, `DELETE /me/data` | customer | Download my data (never a hash); delete live data, budgets, feedback and personal settings |
+| `GET /users`, forecast, summary, `POST /savings-plan`, `POST /whatif` | any; a customer only for own id | 403 `forbidden` for another wallet; 403 `consent_required` for a linked user without consent |
+| `POST /live/transactions` `{user_id, month, day, type, amount, idempotency_key, lang}` | customer (own) or admin | New assessment, `ms`, `changed`, `budgets`, `unusual`. Error codes: `unknown_type`, `amount_out_of_range`, `day_after_prediction_day`, `insufficient_balance`, `duplicate` (409), `consent_required`, `feature_disabled` |
+| `GET /users/{id}/budgets?month=`, `PUT /users/{id}/budgets` `{budgets: {type: amount or null}}` | read rule / write rule | Budget bars (`is_rule: true`) |
+| `DELETE /me/live` | customer | Reset my live data |
+| `POST /feedback` `{suggestion_type, question, answer}` | customer | Stored with a recorded A/B group |
+| `POST /integration/events` `{events: [...]}` (at most 500) | API key | 202 with a `batch_id`; scored in the background |
+| `GET /integration/events/{id}` | the same key, or staff | `queued` / `running` / `done`, accepted and rejected counts |
+| `GET /model-results` | staff | Unchanged; exempt from the probability rule |
+| `/admin/accounts`, `/admin/api-keys`, `POST /admin/settings`, `DELETE /admin/live` | admin | Accounts, keys shown once, feature switches, reset all live data |
+| `GET /admin/settings`, `/admin/audit`, `/admin/consents`, `/admin/monitoring` | admin, analyst | Read-only views |

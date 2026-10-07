@@ -335,6 +335,12 @@
         </div>
       </section>
 
+      <!-- SECTION: safeguards. Five plain statements about what the copilot will and will not do. -->
+      <section class="card note" aria-labelledby="safe-title">
+        <h2 id="safe-title" data-s="safeTitle"></h2>
+        <ul class="plain-list" id="safe-list"></ul>
+      </section>
+
       <!-- SECTION: monthly budgets per spending type. Arithmetic (a rule), not AI. -->
       <section class="card" aria-labelledby="budget-title">
         <span class="tag" data-s="ruleTag"></span>
@@ -396,6 +402,8 @@
       <div class="customer-actions" id="customer-actions" hidden>
         <button type="button" class="btn small" id="live-reset" data-s="liveReset"></button>
         <button type="button" class="btn small" id="consent-withdraw" data-s="consentWithdraw"></button>
+        <button type="button" class="btn small" id="data-export" data-s="exportButton"></button>
+        <button type="button" class="btn small" id="data-delete" data-s="deleteButton"></button>
         <p class="msg soft" id="customer-msg" aria-live="polite"></p>
       </div>
     </footer>
@@ -473,6 +481,24 @@
         budgetSave: "Save budgets",
         budgetSaved: "Budgets saved.",
         budgetInvalid: "Please use whole numbers from 0 to 500,000.",
+        levelN: (n) => "Level " + n,
+        reasonMeta: (code, name, rank, effect, strength) => code + " " + name + " · rank " + rank + " · " + effect +
+          " · strength " + strength + " of 5",
+        effect: { raises_risk: "raises risk", lowers_risk: "lowers risk" },
+        fromRule: "From a rule",
+        fromModel: "From the model",
+        targetTitle: "Balance at which the model would not alert",
+        fbHelpful: "Was this helpful?", fbHelpfulYes: "Helpful", fbHelpfulNo: "Not helpful",
+        fbKeep: "Will you keep this amount aside?", fbKeepYes: "I will keep this amount", fbKeepNo: "Not now",
+        fbThanks: "Thank you. Your answer is saved.",
+        safeTitle: "Safeguards",
+        safe: ["Every suggestion is only a suggestion.", "You confirm anything before it happens; nothing is done for you.",
+          "Nothing here moves money.", "Limits apply: amounts are capped and every input is checked.",
+          "All data here is simulated, not real upay data."],
+        exportButton: "Download my data",
+        deleteButton: "Delete my live data and settings",
+        deleteConfirm: "Delete your live transactions, budgets, feedback and personal settings?",
+        deleteDone: "Your live data and settings were deleted.",
         userLabel: "User",
         monthLabel: "Month",
         demoTitle: "Try a demo case",
@@ -600,6 +626,24 @@
         budgetSave: "বাজেট সংরক্ষণ করুন",
         budgetSaved: "বাজেট সংরক্ষণ করা হয়েছে।",
         budgetInvalid: "অনুগ্রহ করে ০ থেকে ৫,০০,০০০-এর মধ্যে পূর্ণ সংখ্যা দিন।",
+        levelN: (n) => "স্তর " + n,
+        reasonMeta: (code, name, rank, effect, strength) => code + " " + name + " · ক্রম " + rank + " · " + effect +
+          " · শক্তি ৫-এর মধ্যে " + strength,
+        effect: { raises_risk: "ঝুঁকি বেশির দিকে", lowers_risk: "ঝুঁকি কমের দিকে" },
+        fromRule: "একটি নিয়ম থেকে",
+        fromModel: "মডেল থেকে",
+        targetTitle: "যে ব্যালেন্সে মডেল সতর্কতা দিত না",
+        fbHelpful: "এটি কি কাজে লেগেছে?", fbHelpfulYes: "কাজে লেগেছে", fbHelpfulNo: "কাজে লাগেনি",
+        fbKeep: "আপনি কি এই পরিমাণ আলাদা রাখবেন?", fbKeepYes: "আমি এই পরিমাণ রাখব", fbKeepNo: "এখন না",
+        fbThanks: "ধন্যবাদ। আপনার উত্তর সংরক্ষণ করা হয়েছে।",
+        safeTitle: "সুরক্ষা ব্যবস্থা",
+        safe: ["প্রতিটি পরামর্শ শুধুই পরামর্শ।", "কিছু হওয়ার আগে আপনি নিশ্চিত করেন; আপনার হয়ে কিছুই করা হয় না।",
+          "এখানে কোনো টাকা সরানো হয় না।", "সীমা প্রযোজ্য: পরিমাণের সর্বোচ্চ সীমা আছে এবং প্রতিটি তথ্য যাচাই করা হয়।",
+          "এখানের সব ডেটা সিমুলেটেড, upay-এর আসল ডেটা নয়।"],
+        exportButton: "আমার ডেটা ডাউনলোড করুন",
+        deleteButton: "আমার লাইভ ডেটা ও সেটিং মুছে দিন",
+        deleteConfirm: "আপনার লাইভ লেনদেন, বাজেট, মতামত ও ব্যক্তিগত সেটিং মুছে দেবেন?",
+        deleteDone: "আপনার লাইভ ডেটা ও সেটিং মুছে দেওয়া হয়েছে।",
         userLabel: "ব্যবহারকারী",
         monthLabel: "মাস",
         demoTitle: "একটি ডেমো দেখুন",
@@ -736,6 +780,51 @@
         impactAvgShown: (x) => "Average per saver-shown user-month: " + x + " (total fees divided by the saver-shown count).",
         impactRate: (pct) => "Fee rate used: " + pct + "% of each cash-out amount (placeholder).",
         impactMissing: "The impact figures are not available right now.",
+        rfTitle: "Risk factor register",
+        rfNote: "Each model input has a fixed code. Importance is the average size of its effect on the simulated test months (mean |SHAP|), not a cause.",
+        rfCols: ["Code", "Factor", "Global importance"],
+        evidenceTitle: "User research",
+        evidenceMeta: (n, date, method) => "Sample size " + n + ", collected " + date + ". Method: " + method + ".",
+        evidenceCols: ["Answer", "Count"],
+        detailsTitle: "Model details",
+        detailsNote: "Everything in this card is read from the project's artifact files and code. Simulated data.",
+        inputsCaption: "The 11 model inputs (days 1-20 only)",
+        inputsCols: ["Code", "Input"],
+        split: (train, test, oof, how) => "Training months " + train + "; test months " + test + ". " + how +
+          " Out-of-fold rows: " + oof + ".",
+        confusionCaption: (view) => "Shipped model, alerts vs actual shortfalls (" + view + ")",
+        confusionCols: ["", "Shortfall", "No shortfall"],
+        alerted: "Alert", notAlerted: "No alert",
+        viewNames: { view1_all: "View 1, all test user-months", view2_not_below_day20: "View 2, not already below the floor on day 20" },
+        groupsCaption: "Ten groups of test user-months, ordered by the model's score (lowest first)",
+        groupsCols: ["Group", "Rows", "Actual shortfall rate"],
+        spendTitle: "How spending types are defined",
+        spendModel: (list) => "Everyday spending in the model (average daily spend): " + list + ".",
+        spendSummary: (list) => "Month summary categories: " + list + ".",
+        spendBudget: (list) => "Budget bars: " + list + ".",
+        spendLive: (list) => "Transaction types accepted for live data: " + list + ".",
+        anomalyTitle: "Unusual-activity check (pattern check, not fraud detection)",
+        anomalyLines: (a) => ["Trained on months " + a.train_months.join(", ") + " (" + a.train_rows + " transactions); evaluated on months " +
+          a.test_months.join(", ") + ".", "Normal test transactions marked unusual: " + a.test_normal_flagged + " of " + a.test_normal_rows +
+          " (" + fixed3(a.test_normal_false_flag_rate) + ").", "Injected artificial outliers marked unusual: " + a.injected_flagged + " of " +
+          a.injected_rows + " (" + fixed3(a.injected_flag_rate) + ").", a.design_change || "", a.caveat || ""].filter(Boolean),
+        challengerTitle: "Shipped model vs challenger vs balance rule (experiment; the app still uses the shipped model)",
+        challengerCols: ["Method", "PR-AUC", "Precision", "Recall", "F1", "Recall at equal alerts"],
+        methodNames: { shipped: "Shipped model", challenger: "Challenger", rule: "Day-20 balance rule" },
+        ciLine: (name, lo, hi) => name + ": 95% bootstrap interval " + lo + " to " + hi + ".",
+        ciNames: { challenger_minus_shipped_view2_pr_auc: "Challenger minus shipped, View 2 PR-AUC",
+                   challenger_minus_rule_view2_pr_auc: "Challenger minus rule, View 2 PR-AUC",
+                   challenger_minus_shipped_view2_equal_volume_recall: "Challenger minus shipped, View 2 recall at equal alerts" },
+        loadTitle: "Speed, measured on one laptop",
+        loadLines: (t) => ["Machine: " + t.machine.platform + ", " + t.machine.cpu_count + " CPUs, Python " + t.machine.python + "; " + t.when + ".",
+          "Forecast reads (" + t.clients + " clients, API key): " + t.forecast.requests_per_second + " requests/s; p50 " + t.forecast.p50_ms +
+          " ms, p95 " + t.forecast.p95_ms + " ms, p99 " + t.forecast.p99_ms + " ms; rate-limited " + t.forecast.rate_limited_429 + ".",
+          "Live transactions (sessions): " + t.live_transactions.requests_per_second + " requests/s; p50 " + t.live_transactions.p50_ms +
+          " ms, p95 " + t.live_transactions.p95_ms + " ms, p99 " + t.live_transactions.p99_ms + " ms; rate-limited " +
+          t.live_transactions.rate_limited_429 + ".",
+          "Queued batch of " + t.integration_batch.events + " transactions through the event bus: " + t.integration_batch.events_per_second + " per second.",
+          "Batch scoring in one process: " + t.batch_score.rows + " rows in " + t.batch_score.seconds + " s.",
+          "One machine, simulated data; not a production benchmark."],
         pathTitle: "Path to real data",
         path: [
           "Pilot with an opted-in group of users under a data-sharing agreement.",
@@ -753,7 +842,7 @@
     let lang = "en";
     let me = null;                            // GET /auth/me: who is signed in (null while signed out).
     let requestCounter = 0;                   // Forecast requests.
-    const counters = { summary: 0, savings: 0, whatif: 0, results: 0, budgets: 0, live: 0 };   // One counter per new section.
+    const counters = { summary: 0, savings: 0, whatif: 0, results: 0, budgets: 0, live: 0, evidence: 0, details: 0 };   // One counter per new section.
     let lastBudgets = null;                   // Last budget answer, redrawn when the language changes.
     // The 7 transaction types the live form offers (same order as the API's list).
     const LIVE_TYPES = ["merchant_payment", "bill_payment", "mobile_recharge", "send_money_family", "cash_out",
@@ -856,6 +945,7 @@
         $("consent-version").textContent = S().consentVersion(me.consent.notice_version);
       }
       if (lastBudgets) renderBudgets(lastBudgets);
+      $("safe-list").replaceChildren(...S().safe.map((t) => el("li", "", t)));
       // Relabel dropdown options in the chosen language (values stay the same).
       for (const opt of $("user-select").options) opt.textContent = S().userN(num(Number(opt.value)));
       for (const opt of $("month-select").options) {
@@ -960,7 +1050,8 @@
     function renderRisk(d) {
       const chip = $("risk-chip");
       chip.className = "chip " + d.risk_band;
-      chip.textContent = S().band[d.risk_band] || d.risk_band;
+      // Numbered band: "Level 2 · Medium risk" (the level comes from the API; never a probability).
+      chip.textContent = (d.level ? S().levelN(num(d.level)) + " · " : "") + (S().band[d.risk_band] || d.risk_band);
       $("risk-text").textContent = d.risk_band_text;
       const min = d.predicted_min_balance;
       $("min-balance").hidden = !min;
@@ -1039,7 +1130,11 @@
         const arrow = el("span", "arrow", r.direction === "up" ? "↑" : "↓");
         arrow.setAttribute("role", "img");
         arrow.setAttribute("aria-label", r.direction === "up" ? S().up : S().down);
-        li.append(arrow, el("span", "", r.text));
+        const body = el("span");
+        // Risk factor code, rank, direction and strength (from the API) above the reason sentence.
+        if (r.code) body.append(el("span", "soft", S().reasonMeta(r.code, r.factor_name, num(r.rank), S().effect[r.effect], num(r.strength))), el("br"));
+        body.append(el("span", "", r.text));
+        li.append(arrow, body);
         list.appendChild(li);
       }
     }
@@ -1061,8 +1156,18 @@
       const buffer = sugg("buffer");
       if (buffer) {
         const card = el("div", "card");
-        card.append(el("span", "tag", S().tag), el("h2", "", S().bufferTitle),
-          el("div", "big-amount", taka(buffer.amount_bdt)), el("p", "", buffer.text));
+        card.append(el("span", "tag", S().tag), " ", el("span", "tag", S().fromRule), el("h2", "", S().bufferTitle),
+          el("div", "big-amount", taka(buffer.amount_bdt)), el("p", "", buffer.text),
+          feedbackRow("buffer", "helpful"), feedbackRow("buffer", "keep"));
+        box.appendChild(card);
+      }
+      // Model-driven target balance, labelled as coming from the model, next to the rule-based buffer.
+      const target = d.model_target;
+      if (target) {
+        const card = el("div", "card");
+        card.append(el("span", "tag", S().tag), " ", el("span", "tag", S().fromModel), el("h2", "", S().targetTitle),
+          el("div", "big-amount", taka(target.amount_bdt)), el("p", "", target.text),
+          feedbackRow("model_target_balance", "helpful"));
         box.appendChild(card);
       }
       // Cash-out saver card: its text, plus the English fee-rate label in the English view only
@@ -1072,6 +1177,7 @@
         const card = el("div", "card");
         card.append(el("span", "tag", S().tag), el("h2", "", S().cashoutTitle), el("p", "", cashout.text));
         if (lang === "en") card.appendChild(el("p", "fee-label", cashout.fee_rate_label));
+        card.appendChild(feedbackRow("cashout_saver", "helpful"));
         box.appendChild(card);
       }
       // Savings-blocked note after the suggestions.
@@ -1084,6 +1190,27 @@
         box.appendChild(card);
       }
       $("sugg-section").hidden = box.children.length === 0;
+    }
+
+    // SECTION: feedback buttons under a suggestion (customers only). Two answers; the reply replaces them.
+    function feedbackRow(type, question) {
+      const row = el("div", "result");
+      if (!me || me.role !== "customer") return row;            // Staff do not answer for customers.
+      const q = question === "keep" ? [S().fbKeep, S().fbKeepYes, S().fbKeepNo] : [S().fbHelpful, S().fbHelpfulYes, S().fbHelpfulNo];
+      const buttons = el("div", "customer-actions");
+      for (const [answer, label] of [["yes", q[1]], ["no", q[2]]]) {
+        const b = el("button", "btn small", label);
+        b.type = "button";
+        b.addEventListener("click", async () => {
+          const section = "fb-" + type + "-" + question;        // Own counter per question row.
+          counters[section] = counters[section] || 0;
+          const r = await fetchJson(section, "/feedback", { suggestion_type: type, question, answer });
+          if (r) row.replaceChildren(el("p", r.msg ? "form-error" : "soft", r.msg || S().fbThanks));
+        });
+        buttons.appendChild(b);
+      }
+      row.append(el("p", "soft", q[0]), buttons);
+      return row;
     }
 
     // SECTION: month summary. Bars for categories and weeks; widths are scaled to the largest amount
@@ -1337,6 +1464,12 @@
       bars(shapBars, shap.map(([k, v]) => ({ label: R.featureNames[k] || STRINGS.en.fields[k] || k, amount: v })), fixed3);
       cards.push(resultsCard(R.shapTitle, el("p", "soft", R.shapNote), shapBars));
 
+      // 4b. Risk factor register: all 11 codes with their global importance from shap_global.json.
+      if (Array.isArray(d.risk_factors)) {
+        cards.push(resultsCard(R.rfTitle, el("p", "soft", R.rfNote), makeTable(R.rfTitle, R.rfCols,
+          d.risk_factors.map((f) => [f.code, f.name, fixed3(d.shap_global.mean_abs_shap[f.feature])]))));
+      }
+
       // 5. Fairness: one table per column, exactly as the artifact has it, then what it supports.
       const fairParts = [];
       let groupCount = 0, lowCount = 0;
@@ -1355,8 +1488,69 @@
       const impact = impactCard(d.impact);
       if (impact) cards.push(impact);
       cards.push(resultsCard(R.pathTitle, plainList(R.path)));
+      const evidence = el("section", "card");                   // Filled by loadEvidence; hidden without a file.
+      evidence.id = "evidence-card";
+      evidence.hidden = true;
+      cards.push(evidence);
+      const detailsBox = el("div", "cards");                    // Filled by loadDetails from GET /results/details.
+      detailsBox.id = "details-box";
+      detailsBox.style.padding = "0";
+      cards.push(detailsBox);
       cards.push(el("p", "disclaimer", d.disclaimer));
       $("results-body").replaceChildren(...cards);
+      loadEvidence();
+      loadDetails();
+    }
+    // SECTION: model details and the load test. Everything is read from artifact files through the API;
+    // a part whose file does not exist yet is left out.
+    async function loadDetails() {
+      const r = await fetchJson("details", "/results/details");
+      const box = $("details-box");
+      if (!r || !box || r.msg || !r.data) return;
+      const R = STRINGS.results, d = r.data, en = (x) => num(x, "en");
+      const rate = (x) => (x === null || x === undefined ? R.notAvailable : fixed3(x));
+      const parts = [el("p", "soft", R.detailsNote),
+        makeTable(R.inputsCaption, R.inputsCols, d.inputs.map((f) => [f.code, f.name])),
+        el("p", "", R.split(d.split.train_months.join(", "), d.split.test_months.join(", "), en(d.split.out_of_fold_rows), d.split.how))];
+      if (d.confusion) {
+        for (const [view, c] of Object.entries(d.confusion)) {
+          parts.push(makeTable(R.confusionCaption(R.viewNames[view] || view), R.confusionCols,
+            [[R.alerted, en(c.tp), en(c.fp)], [R.notAlerted, en(c.fn), en(c.tn)]]));
+        }
+      }
+      parts.push(makeTable(R.groupsCaption, R.groupsCols, d.groups.map((g) => [en(g.group), en(g.rows), rate(g.actual_shortfall_rate)])));
+      const cards = [resultsCard(R.detailsTitle, ...parts)];
+      const st = d.spending_types;
+      cards.push(resultsCard(R.spendTitle, plainList([R.spendModel(st.model_everyday_spend.join(", ")),
+        R.spendSummary(Object.entries(st.summary_categories).map(([t, c]) => t + " (" + c + ")").join(", ")),
+        R.spendBudget(st.budget_types.join(", ")), R.spendLive(Object.keys(st.live_types).join(", "))])));
+      if (d.anomaly) cards.push(resultsCard(R.anomalyTitle, plainList(R.anomalyLines(d.anomaly))));
+      if (d.challenger && d.challenger.views) {
+        const c = d.challenger, tables = [];
+        for (const [view, v] of Object.entries(c.views)) {
+          tables.push(makeTable(R.viewNames[view] || view, R.challengerCols, ["shipped", "challenger", "rule"].map((m) =>
+            [R.methodNames[m], fixed3(v[m].pr_auc), fixed3(v[m].precision), fixed3(v[m].recall), fixed3(v[m].f1),
+              fixed3(v.equal_volume[m + "_recall"])])));
+        }
+        const ci = Object.entries(c.bootstrap_95ci || {}).map(([k, x]) => R.ciLine(R.ciNames[k] || k, signed3(x[0]), signed3(x[1])));
+        cards.push(resultsCard(R.challengerTitle, el("p", "", c.verdict_text), ...tables, plainList(ci)));
+      }
+      if (d.load_test) cards.push(resultsCard(R.loadTitle, plainList(R.loadLines(d.load_test))));
+      box.replaceChildren(...cards);
+    }
+    // SECTION: user-research card. Shown only when docs/survey_results.json exists (GET /evidence answers 200).
+    // Every number is the file's own; the page adds none.
+    async function loadEvidence() {
+      const r = await fetchJson("evidence", "/evidence");
+      const card = $("evidence-card");
+      if (!r || !card || r.msg || !r.data) return;
+      const R = STRINGS.results, d = r.data;
+      const parts = [el("h2", "", R.evidenceTitle), el("p", "soft", R.evidenceMeta(String(d.n), String(d.date), String(d.method)))];
+      for (const q of d.questions || []) {
+        parts.push(makeTable(String(q.text), R.evidenceCols, Object.entries(q.answers || {}).map(([a, n]) => [a, String(n)])));
+      }
+      card.replaceChildren(...parts);
+      card.hidden = false;
     }
     // SECTION: impact card. Reads only the served impact field; no arithmetic. A missing or broken field
     // gives a one-line message instead of a blank card.
@@ -1600,6 +1794,27 @@
       if (r.msg) { $("customer-msg").textContent = r.msg; return; }
       me = r.data;
       showWallet();
+    });
+    // "Download my data": the API's JSON saved as a file through a temporary in-page link.
+    $("data-export").addEventListener("click", async () => {
+      const r = await fetchJson("live", "/me/export");
+      if (!r) return;
+      if (r.msg) { $("customer-msg").textContent = r.msg; return; }
+      const link = el("a");
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(r.data, null, 2)], { type: "application/json" }));
+      link.download = "my-copilot-data.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    });
+    // "Delete my live data and settings": asks first, then reloads the simulated month.
+    $("data-delete").addEventListener("click", async () => {
+      if (!window.confirm(S().deleteConfirm)) return;
+      const r = await fetchJson("live", "/me/data", undefined, "DELETE");
+      if (!r) return;
+      $("customer-msg").textContent = r.msg || S().deleteDone;
+      $("live-out").replaceChildren();
+      wi.key = null;
+      loadForecast(); loadSummary(); loadBudgets();
     });
     $("consent-accept").addEventListener("click", async () => {
       const r = await fetchJson("live", "/me/consent", { notice_version: me.consent.notice_version });

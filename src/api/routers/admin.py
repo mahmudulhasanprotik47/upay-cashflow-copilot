@@ -257,7 +257,17 @@ def monitoring(_p=Depends(deps.staff)):
         "median_scoring_ms": round(statistics.median(ms), 1) if ms else None,
         "live_rows_stored": db.one("SELECT COUNT(*) n FROM live_transactions")["n"],
         "staff_wallet_views": db.one("SELECT COUNT(*) n FROM audit_log WHERE action LIKE 'view_%'")["n"],
+        # Feedback answers per A/B group, e.g. {"A": {"helpful:yes": 3}}. Groups are recorded only.
+        "feedback_by_group": feedback_counts(db),
     }
+
+
+def feedback_counts(db):
+    """{group: {"question:answer": count}} from the feedback table."""
+    out = {}
+    for r in db.query("SELECT ab_group, question, answer, COUNT(*) n FROM feedback GROUP BY ab_group, question, answer"):
+        out.setdefault(r["ab_group"], {})[f"{r['question']}:{r['answer']}"] = r["n"]
+    return out
 
 
 @router.delete("/live")

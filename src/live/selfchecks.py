@@ -6,7 +6,7 @@ from src import config as cfg  # Types, limits, consent version.
 from src.api import deps, service  # Access rules; base data and the overlay hook.
 from src.data.generator import cashout_fee  # Fee rule, to work the balance out by hand.
 from src.db import database  # Temporary database.
-from src.live import engine  # Code under test.
+from src.live import engine, risk_factors  # Code under test.
 from src.models.predict import predict_and_explain  # Top reasons, to compare with the full SHAP vector.
 from src.security import auth  # Accounts for the consent check.
 
@@ -129,7 +129,7 @@ def check_balance(report, u, m):
             or after["bill_payments_d1_20"] - before["bill_payments_d1_20"] != 1):
         bad.append("sums")
     # (c) The full SHAP vector agrees with the model's top reasons.
-    vector, _ = engine.shap_vector(after)
+    vector, _ = risk_factors.shap_vector(after)
     top = sorted(vector, key=lambda f: -abs(vector[f]))[:cfg.TOP_REASONS]
     if top != [r["feature"] for r in predict_and_explain(after)["reasons"]] or len(vector) != 11:
         bad.append("shap")
@@ -139,6 +139,99 @@ def check_balance(report, u, m):
         bad.append("reset")
     return report(20, "balance consistency after live transactions", not bad,
                   f"failed: {', '.join(bad)}" if bad else f"user {u} month {m}, 4 live rows, 20 empty views")
+
+
+def check_target(report):
+    """Check 21: on a balance grid the alert risk never rises, and the search returns the first grid value
+    without an alert (or None when every grid value alerts). Texts pass the banned and causal word checks."""
+    import numpy as np  # Grid maths.
+    import pandas as pd  # Grid table.
+    from src.i18n.messages import render  # The target sentence.
+    from src.models import target_balance  # Code under test.
+    from src.models.predict import alert_threshold, load_artifacts  # The saved model.
+    clf, _, info = load_artifacts()
+    step, bad, found = cfg.BUFFER_ROUND_BDT, [], 0
+    for u, m in service.sampled_alert_rows()[:50]:
+        features = service.features_for(u, m)
+        start = int(np.ceil(features["balance_day20"] / step) * step)
+        grid = np.arange(start, cfg.WHATIF_MAX_BDT + 1, step)
+        table = pd.DataFrame([features] * len(grid), columns=service.FEATURES).astype(float)
+        table["balance_day20"] = grid
+        risk = clf.predict_proba(table)[:, 1]
+        if np.any(np.diff(risk) > 1e-12):
+            bad.append(f"rises {u}/{m}")
+        no_alert = grid[risk < alert_threshold(info)]
+        first = int(no_alert[0]) if len(no_alert) else None
+        got = target_balance.search(features)
+        found += got is not None
+        if got != first:
+            bad.append(f"search {u}/{m}")
+    for lang in cfg.LANGUAGES:  # The sentence never pressures and never claims a cause.
+        text = render("target_balance", lang, amount=12500)
+        words = cfg.BANNED_WORDS_EN + cfg.CAUSAL_WORDS_EN if lang == "en" else cfg.BANNED_WORDS_BN + cfg.CAUSAL_WORDS_BN
+        if service.has_causal_word(text, lang) or any(w in text.lower() for w in words):
+            bad.append(f"words {lang}")
+    return report(21, "target balance: monotone risk, search = first non-alert grid value", not bad,
+                  f"failed: {', '.join(bad[:4])}" if bad else f"50 alert rows, {found} with a target")
+
+
+def check_register(report):
+    """Check 22: RF codes RF-01..RF-11 complete, unique, in FEATURES order, with English and Bangla names."""
+    from src.i18n.messages import RISK_FACTORS  # Code under test.
+    codes = [RISK_FACTORS[f][0] for f in service.FEATURES if f in RISK_FACTORS]
+    ok = (list(RISK_FACTORS) == list(service.FEATURES) and codes == [f"RF-{i:02d}" for i in range(1, 12)]
+          and len(set(codes)) == 11
+          and all(en.strip() and bn.strip() and en != bn for _, en, bn in RISK_FACTORS.values()))
+    return report(22, "risk factor codes complete and unique, en and bn names", ok, f"{len(codes)} codes")
+
+
+def walk_items(obj):
+    """Every (key, value) pair anywhere in a nested answer."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            yield k, v
+            yield from walk_items(v)
+    elif isinstance(obj, list):
+        for v in obj:
+            yield from walk_items(v)
+
+
+def check_no_probability(report):
+    """Check 23: no probability or threshold (key or value) in any answer the two pages call.
+    /model-results is staff-only and exempt. Uses a temporary database and a staff principal."""
+    from src.api.routers import auth as auth_router, live as live_router, results, wallet  # Page endpoints.
+    from src.models.predict import alert_threshold, load_artifacts  # The value that must never appear.
+    db = database.Database(":memory:")
+    database.use(db)
+    engine.reset(None)
+    service.OVERLAY = engine.overlay
+    admin = {"kind": "session", "account_id": None, "name": "check", "role": "admin", "user_id": None}
+    banned_value = round(alert_threshold(load_artifacts()[2]), 4)
+    try:
+        u_alert, m_alert = service.sampled_alert_rows()[0]
+        answers = [wallet.users(admin), results.results(), results.details(), auth_router.me_body(admin)]
+        for u, m in [(u_alert, m_alert), (1, 5), (1, 0)]:
+            for lang in cfg.LANGUAGES:
+                answers.append(wallet.forecast(u, m, lang, admin))
+            answers.append(wallet.summary(u, m, "en", admin))
+            answers.append(live_router.get_budgets(u, m, admin))
+            answers.append(wallet.whatif(wallet.WhatIfRequest(user_id=u, month=m, overrides={"balance_day20": 2500}), admin))
+            answers.append(wallet.savings_plan(wallet.SavingsRequest(user_id=u, month=m, goal_bdt=10000, months=6), admin))
+        answers.append(engine.submit(u_alert, m_alert, 5, "add_money", 100, "p23"))
+        bad = set()
+        for a in answers:
+            for k, v in walk_items(a):
+                if any(w in str(k).lower() for w in ("prob", "threshold", "mean_pred")):
+                    bad.add(f"key {k}")
+                if isinstance(v, float) and round(v, 4) == banned_value:
+                    bad.add(f"value in {k}")
+    finally:
+        service.OVERLAY = None
+        engine.reset(None)
+        db.close()
+        database.use(None)
+    return report(23, "no probability or threshold in any page answer", not bad,
+                  f"failed: {', '.join(sorted(bad)[:4])}" if bad else f"{len(answers)} answers checked")
 
 
 def check_live(report):

@@ -1,0 +1,134 @@
+{
+  "simulated": true,
+  "experiment_only": true,
+  "app_uses": "shipped model (unchanged)",
+  "leakage_test": {
+    "bal_trend_d11_20": true,
+    "balance_swing_d1_20": true,
+    "spend_last5_vs_avg": true,
+    "earlier_shortfalls": true,
+    "share_merchant_payment": true,
+    "share_bill_payment": true,
+    "share_mobile_recharge": true,
+    "share_send_money_family": true,
+    "share_cash_out": true
+  },
+  "search": {
+    "trials": 30,
+    "chosen_by": "pooled out-of-fold PR-AUC, training months only",
+    "best_oof_pr_auc": 0.8232,
+    "chosen_settings": {
+      "n_estimators": 190,
+      "max_depth": 2,
+      "learning_rate": 0.022178931268290944,
+      "min_child_weight": 2.0,
+      "subsample": 0.9969502256223348,
+      "colsample_bytree": 0.9566709065019656,
+      "reg_lambda": 4.7118388131488,
+      "scale_pos_weight": 1.0
+    },
+    "oof_f1_at_chosen_threshold": 0.7582,
+    "chosen_threshold": 0.238392
+  },
+  "views": {
+    "view1_all": {
+      "shipped": {
+        "roc_auc": 0.853,
+        "pr_auc": 0.7615,
+        "precision": 0.6809,
+        "recall": 0.653,
+        "f1": 0.6667
+      },
+      "challenger": {
+        "roc_auc": 0.8508,
+        "pr_auc": 0.752,
+        "precision": 0.6851,
+        "recall": 0.6422,
+        "f1": 0.663
+      },
+      "rule": {
+        "roc_auc": 0.8429,
+        "pr_auc": 0.736,
+        "precision": 0.7313,
+        "recall": 0.6099,
+        "f1": 0.6651
+      },
+      "equal_volume": {
+        "alerts": 387,
+        "rule_recall": 0.6099,
+        "rule_precision": 0.7313,
+        "shipped_recall": 0.6228,
+        "shipped_precision": 0.7468,
+        "challenger_recall": 0.6099,
+        "challenger_precision": 0.7313
+      }
+    },
+    "view2_not_below_day20": {
+      "shipped": {
+        "roc_auc": 0.7445,
+        "pr_auc": 0.4217,
+        "precision": 0.4298,
+        "recall": 0.3784,
+        "f1": 0.4025
+      },
+      "challenger": {
+        "roc_auc": 0.7408,
+        "pr_auc": 0.4095,
+        "precision": 0.4266,
+        "recall": 0.3591,
+        "f1": 0.3899
+      },
+      "rule": {
+        "roc_auc": 0.7274,
+        "pr_auc": 0.392,
+        "precision": 0.4588,
+        "recall": 0.3012,
+        "f1": 0.3636
+      },
+      "equal_volume": {
+        "alerts": 170,
+        "rule_recall": 0.3012,
+        "rule_precision": 0.4588,
+        "shipped_recall": 0.3243,
+        "shipped_precision": 0.4941,
+        "challenger_recall": 0.3012,
+        "challenger_precision": 0.4588
+      }
+    }
+  },
+  "shipped_confusion": {
+    "view1_all": {
+      "tp": 303,
+      "fp": 142,
+      "fn": 161,
+      "tn": 1394
+    },
+    "view2_not_below_day20": {
+      "tp": 98,
+      "fp": 130,
+      "fn": 161,
+      "tn": 1394
+    }
+  },
+  "bootstrap_95ci": {
+    "challenger_minus_shipped_view2_pr_auc": [
+      -0.0428,
+      0.0146
+    ],
+    "challenger_minus_rule_view2_pr_auc": [
+      -0.0007,
+      0.0429
+    ],
+    "challenger_minus_shipped_view2_equal_volume_recall": [
+      -0.0455,
+      0.0155
+    ]
+  },
+  "bootstrap_mean": {
+    "challenger_minus_shipped_view2_pr_auc": -0.013,
+    "challenger_minus_rule_view2_pr_auc": 0.0178,
+    "challenger_minus_shipped_view2_equal_volume_recall": -0.016
+  },
+  "verdict": "same",
+  "verdict_text": "The challenger is not clearly better than the shipped model: the View 2 PR-AUC interval includes zero. The shipped model stays."
+}

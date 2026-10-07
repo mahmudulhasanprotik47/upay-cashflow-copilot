@@ -651,8 +651,11 @@ def self_checks():
     # 17+. Phase 2 checks, imported here so checks 1-16 never depend on the new modules.
     from src.security.selfchecks import check_access
     check_access(report)
-    from src.live.selfchecks import check_live  # Checks 18-20.
+    from src.live.selfchecks import check_live, check_no_probability, check_register, check_target  # 18-23.
     check_live(report)
+    check_target(report)
+    check_register(report)
+    check_no_probability(report)
 
 
 if __name__ == "__main__":

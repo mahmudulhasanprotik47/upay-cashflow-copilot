@@ -88,6 +88,40 @@ def give_consent(body: ConsentRequest, p=Depends(deps.customer)):
     return me_body(p)
 
 
+@router.get("/me/export")
+def export_my_data(p=Depends(deps.customer)):
+    """Everything stored about this customer, as JSON (never the password hash or session tokens)."""
+    db, uid = database.get(), p["user_id"]
+    account = db.one("SELECT id, username, role, user_id, disabled, created_at FROM accounts WHERE id = ?",
+                     (p["account_id"],))
+    database.audit(p, "data_exported", uid)
+    return {"simulated": True, "account": account,
+            "consents": db.query("SELECT notice_version, given_at, withdrawn_at FROM consents WHERE user_id = ?", (uid,)),
+            "live_transactions": db.query("SELECT month, day, type, direction, amount, fee, created_at "
+                                          "FROM live_transactions WHERE user_id = ? ORDER BY id", (uid,)),
+            "budgets": db.query("SELECT type, amount_bdt, updated_at FROM budgets WHERE user_id = ?", (uid,)),
+            "feedback": db.query("SELECT suggestion_type, question, answer, created_at FROM feedback "
+                                 "WHERE user_id = ?", (uid,)),
+            "settings": db.query("SELECT key, value, updated_at FROM settings WHERE scope = ?", (f"user:{uid}",))}
+
+
+@router.delete("/me/data")
+def delete_my_data(p=Depends(deps.customer)):
+    """Delete this customer's live transactions, budgets, feedback and per-user settings.
+
+    The account, the consent record and the audit log stay: they show what was agreed and done.
+    """
+    from src.live import engine  # Imported here: the live engine loads the model data.
+    uid, db = p["user_id"], database.get()
+    counts = {"live_transactions": engine.reset(uid)}
+    with db.transaction():
+        counts["budgets"] = db.execute("DELETE FROM budgets WHERE user_id = ?", (uid,)).rowcount
+        counts["feedback"] = db.execute("DELETE FROM feedback WHERE user_id = ?", (uid,)).rowcount
+        counts["settings"] = db.execute("DELETE FROM settings WHERE scope = ?", (f"user:{uid}",)).rowcount
+    database.audit(p, "data_deleted", uid, ", ".join(f"{k}={v}" for k, v in counts.items()))
+    return {"deleted": counts}
+
+
 @router.post("/me/consent/withdraw")
 def withdraw_consent(p=Depends(deps.customer)):
     """Withdraw consent: no new assessment is made until consent is given again."""

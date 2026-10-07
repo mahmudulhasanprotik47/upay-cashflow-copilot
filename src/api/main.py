@@ -13,7 +13,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException  # 404/
 from src import config as cfg  # Central settings.
 from src.api import service  # Data, models and the cached results.
 from src.api.deps import ApiError, error_response  # Coded, bilingual errors.
-from src.api.routers import admin, auth, live, results, wallet  # The routes.
+from src.api.routers import admin, auth, integration, live, results, wallet  # The routes.
+from src.integration.event_bus import BUS  # In-process message queue.
 from src.db import database  # SQLite storage.
 from src.live import engine  # Live transactions (sets the service overlay).
 from src.security import auth as security  # The first admin account.
@@ -32,7 +33,9 @@ async def lifespan(_app):
     database.init()
     security.ensure_admin()
     engine.install()
+    BUS.start()  # Background worker for integration batches.
     yield
+    BUS.stop()
 
 
 app = FastAPI(title="upay Cash-Flow Copilot (simulated)", lifespan=lifespan)
@@ -81,5 +84,5 @@ async def on_crash(_request: Request, _exc):
     return error_response(500, "server")
 
 
-for module in (results, auth, wallet, live, admin):
+for module in (results, auth, wallet, live, admin, integration):
     app.include_router(module.router)

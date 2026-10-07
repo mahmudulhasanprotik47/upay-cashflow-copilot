@@ -1,6 +1,7 @@
 # Live transactions, budgets and the customer's own live-data reset. All data is simulated.
 # A live transaction is scored by the saved model in this process; nothing here moves money.
 
+import hashlib  # Stable A/B group.
 from typing import Annotated, Literal  # Input types.
 
 from fastapi import APIRouter, Depends, Path, Query  # Routing.
@@ -75,6 +76,30 @@ def set_budgets(user_id: UserId, body: BudgetChange, p=Depends(deps.principal)):
                            "updated_at = excluded.updated_at", (user_id, t, v, database.now()))
     database.audit(p, "budgets_set", user_id, ", ".join(f"{t}={v}" for t, v in body.budgets.items()))
     return {"saved": True, "budgets": budgets.custom_budgets(user_id)}
+
+
+class Feedback(BaseModel):
+    """Body for POST /feedback: one answer about one suggestion."""
+    model_config = ConfigDict(strict=True, extra="forbid")
+    suggestion_type: Literal["buffer", "cashout_saver", "model_target_balance"]
+    question: Literal["helpful", "keep"]  # "Was this helpful?" / "Will you keep this amount?"
+    answer: Literal["yes", "no"]
+
+
+def ab_group(user_id):
+    """Stable group A or B from a hash of the user id. Recorded only: both groups see the same screen."""
+    return "A" if hashlib.sha256(f"copilot-ab:{user_id}".encode()).digest()[0] % 2 == 0 else "B"
+
+
+@router.post("/feedback")
+def give_feedback(body: Feedback, p=Depends(deps.customer)):
+    """Store one feedback answer from a customer about a suggestion on their own wallet."""
+    if not deps.consent_ok(p["user_id"]):
+        raise deps.ApiError(403, "consent_required")
+    database.get().execute("INSERT INTO feedback (user_id, suggestion_type, question, answer, ab_group, created_at) "
+                           "VALUES (?, ?, ?, ?, ?, ?)", (p["user_id"], body.suggestion_type, body.question,
+                                                          body.answer, ab_group(p["user_id"]), database.now()))
+    return {"saved": True}
 
 
 @router.delete("/me/live")

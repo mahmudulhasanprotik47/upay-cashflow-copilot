@@ -219,6 +219,29 @@ MESSAGES = {
     "unusual_unavailable": {
         "en": "The unusual-activity check is not available right now.",
         "bn": "অস্বাভাবিক লেনদেন যাচাই এখন পাওয়া যাচ্ছে না।"},
+
+    # --- Phase 2C: model-driven target balance (a model reading, never a cause or a promise) ---
+    "target_balance": {
+        "en": "From the model: at a day-20 balance of {amount} BDT, the model would not raise this alert. "
+              "This describes the model, not a promise about your month.",
+        "bn": "মডেল থেকে: ২০তম দিনের ব্যালেন্স {amount} টাকা হলে মডেল এই সতর্কতা দিত না। "
+              "এটি মডেলের একটি বর্ণনা, আপনার মাস নিয়ে কোনো প্রতিশ্রুতি নয়।"},
+}
+
+# Risk factor register: one fixed code per model input, in the model's FEATURES order, with a plain
+# name in English and Bangla. feature -> (code, English name, Bangla name).
+RISK_FACTORS = {
+    "balance_day20": ("RF-01", "Balance on day 20", "২০তম দিনের ব্যালেন্স"),
+    "min_balance_d1_20": ("RF-02", "Lowest balance, days 1-20", "১-২০ দিনের সর্বনিম্ন ব্যালেন্স"),
+    "avg_daily_spend_d1_20": ("RF-03", "Average spending per day", "দৈনিক গড় খরচ"),
+    "total_inflow_d1_20": ("RF-04", "Money received, days 1-20", "১-২০ দিনে আসা টাকা"),
+    "total_outflow_d1_20": ("RF-05", "Money out, days 1-20", "১-২০ দিনে বেরিয়ে যাওয়া টাকা"),
+    "cashout_count_d1_20": ("RF-06", "Number of cash-outs", "ক্যাশ আউটের সংখ্যা"),
+    "cashout_amount_d1_20": ("RF-07", "Cash-out amount", "ক্যাশ আউটের পরিমাণ"),
+    "days_since_last_inflow": ("RF-08", "Days since money last came in", "শেষবার টাকা আসার পর কত দিন"),
+    "bill_payments_d1_20": ("RF-09", "Number of bill payments", "বিল পরিশোধের সংখ্যা"),
+    "prev_month_shortfall": ("RF-10", "Ran short last month", "গত মাসে টাকা কম পড়েছিল"),
+    "inflow_vs_prev_month": ("RF-11", "Money received compared with last month", "গত মাসের তুলনায় আসা টাকা"),
 }
 
 # Reasons: what the model looked at, in the user's own numbers (en, bn, preview sample value).

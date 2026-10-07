@@ -260,7 +260,7 @@ def sanity_checks(train, test, model, out, lines):
 
 
 def helper_regressor(train, test, out, lines):
-    """Predict the lowest balance on days 21-30 (only used for the buffer amount)."""
+    """Predict the lowest balance on days 21-30 (shown as the estimated minimum balance; the buffer is a rule)."""
     reg = XGBRegressor(**model_params())
     reg.fit(train[FEATURES], train["min_balance_d21_30"])
     pred = reg.predict(test[FEATURES])

@@ -303,6 +303,20 @@ def live_checks(admin, analyst, customer, uid, other):
           and after["balance_by_day"] == before["balance_by_day"])
     customer.call("PUT", f"/users/{uid}/budgets", {"budgets": {"merchant_payment": None}})
 
+    # Stage 1: risk factor fields, feedback, export, delete, evidence.
+    reasons = after.get("reasons", [])
+    check("reasons carry code, rank, effect and strength; band has a level", "level" in after and all(
+        r.get("code", "").startswith("RF-") and 1 <= r.get("strength", 0) <= 5 for r in reasons))
+    status, _, _ = customer.call("POST", "/feedback", {"suggestion_type": "buffer", "question": "helpful", "answer": "yes"})
+    status2, _, _ = analyst.call("POST", "/feedback", {"suggestion_type": "buffer", "question": "helpful", "answer": "yes"})
+    check("customer gives feedback; analyst cannot (403)", status == 200 and status2 == 403)
+    status, _, data = customer.call("GET", "/me/export")
+    check("export has my data and never a hash", status == 200 and data.get("feedback") and "pw_hash" not in keys_in(data))
+    status, _, data = customer.call("DELETE", "/me/data")
+    check("delete my data removes feedback", status == 200 and data["deleted"]["feedback"] >= 1)
+    status, _, _ = admin.call("GET", "/evidence")
+    check("evidence answers 404 without a survey file", status == 404 or (status == 200 and os.path.exists("docs/survey_results.json")))
+
 
 def finish():
     """Print the total and return the exit code."""

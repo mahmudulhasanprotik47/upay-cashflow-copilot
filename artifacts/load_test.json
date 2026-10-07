@@ -1,0 +1,47 @@
+{
+  "simulated": true,
+  "measured_on": "one laptop",
+  "base_url": "http://127.0.0.1:8000",
+  "when": "2026-10-07T05:20:00+00:00",
+  "machine": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 142 Stepping 10, GenuineIntel",
+    "cpu_count": 8,
+    "python": "3.14.8"
+  },
+  "clients": 8,
+  "requests_per_client": 40,
+  "forecast": {
+    "requests": 320,
+    "ok": 320,
+    "rate_limited_429": 0,
+    "other_errors": 0,
+    "requests_per_second": 19.1,
+    "p50_ms": 311.9,
+    "p95_ms": 975.6,
+    "p99_ms": 1074.6
+  },
+  "live_transactions": {
+    "requests": 160,
+    "ok": 160,
+    "rate_limited_429": 0,
+    "other_errors": 0,
+    "requests_per_second": 3.6,
+    "p50_ms": 994.5,
+    "p95_ms": 1985.2,
+    "p99_ms": 2541.7
+  },
+  "integration_batch": {
+    "events": 200,
+    "status": "done",
+    "accepted": 200,
+    "rejected": 0,
+    "seconds": 59.45,
+    "events_per_second": 3.4
+  },
+  "batch_score": {
+    "rows": 100000,
+    "seconds": 0.234,
+    "rows_per_second": 426447
+  }
+}

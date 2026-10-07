@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field  # Request body checks.
 
 from src import config as cfg  # Central settings.
 from src.api import deps, service  # Access rules; all the real work.
+from src.live import risk_factors  # Risk-factor codes, levels and the model target (new fields).
 
 router = APIRouter()
 
@@ -56,7 +57,8 @@ def forecast(user_id: UserId, month: Month, lang: Lang = "en", p=Depends(deps.pr
     """Risk band, reasons, suggestions and chart data for one user-month."""
     deps.check_read(p, user_id, "forecast")
     check_exists(user_id, month)
-    return {**service.forecast(user_id, month, lang), "data_subject": deps.data_subject(user_id)}
+    out = risk_factors.enrich(service.forecast(user_id, month, lang), service.features_for(user_id, month), lang)
+    return {**out, "data_subject": deps.data_subject(user_id)}
 
 
 @router.get("/users/{user_id}/months/{month}/summary")
@@ -80,4 +82,8 @@ def whatif(body: WhatIfRequest, p=Depends(deps.principal)):
     """Forecast with some inputs changed, next to the original. Changes nothing stored."""
     deps.check_read(p, body.user_id, "whatif")
     check_exists(body.user_id, body.month)
-    return service.whatif(body.user_id, body.month, body.overrides, body.lang)
+    out = service.whatif(body.user_id, body.month, body.overrides, body.lang)
+    original = service.features_for(body.user_id, body.month)
+    risk_factors.enrich(out["original"], original, body.lang)  # Both sides get codes, levels, targets.
+    risk_factors.enrich(out["whatif"], {**original, **out["changed_inputs"]}, body.lang)
+    return out

@@ -1,0 +1,16 @@
+{
+  "_note": "Example of the SHAPE only. Copy to docs/survey_results.json and fill it with real collected answers. The project never fills in survey numbers itself; all values below are placeholders.",
+  "n": 0,
+  "date": "YYYY-MM-DD",
+  "method": "How the answers were collected, e.g. in-person interviews at agent points, or an online form; who was asked and how they were chosen",
+  "questions": [
+    {
+      "text": "Did your mobile wallet balance run short before the end of the month in the last 3 months?",
+      "answers": {"Yes, more than once": 0, "Yes, once": 0, "No": 0, "Prefer not to say": 0}
+    },
+    {
+      "text": "Would a warning around day 20 of the month be useful to you?",
+      "answers": {"Very useful": 0, "Somewhat useful": 0, "Not useful": 0}
+    }
+  ]
+}

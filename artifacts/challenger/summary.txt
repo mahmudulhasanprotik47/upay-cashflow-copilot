@@ -1,0 +1,19 @@
+Leakage test per candidate (rebuild without days > 20): bal_trend_d11_20 PASS, balance_swing_d1_20 PASS, spend_last5_vs_avg PASS, earlier_shortfalls PASS, share_merchant_payment PASS, share_bill_payment PASS, share_mobile_recharge PASS, share_send_money_family PASS, share_cash_out PASS
+Random search: 30 settings; best out-of-fold PR-AUC 0.823
+  chosen settings: {"n_estimators": 190, "max_depth": 2, "learning_rate": 0.022, "min_child_weight": 2.0, "subsample": 0.997, "colsample_bytree": 0.957, "reg_lambda": 4.712, "scale_pos_weight": 1.0}
+Test months [4, 5]: 2000 rows (scored once)
+view1_all: rows 2000, shortfalls 464
+  shipped    PR-AUC 0.761  P 0.681  R 0.653  F1 0.667  recall@387 alerts 0.623
+  challenger PR-AUC 0.752  P 0.685  R 0.642  F1 0.663  recall@387 alerts 0.610
+  rule       PR-AUC 0.736  P 0.731  R 0.610  F1 0.665  recall@387 alerts 0.610
+view2_not_below_day20: rows 1783, shortfalls 259
+  shipped    PR-AUC 0.422  P 0.430  R 0.378  F1 0.403  recall@170 alerts 0.324
+  challenger PR-AUC 0.409  P 0.427  R 0.359  F1 0.390  recall@170 alerts 0.301
+  rule       PR-AUC 0.392  P 0.459  R 0.301  F1 0.364  recall@170 alerts 0.301
+Bootstrap challenger_minus_shipped_view2_pr_auc: mean -0.013, 95% interval [-0.043, +0.015]
+Bootstrap challenger_minus_rule_view2_pr_auc: mean +0.018, 95% interval [-0.001, +0.043]
+Bootstrap challenger_minus_shipped_view2_equal_volume_recall: mean -0.016, 95% interval [-0.045, +0.016]
+  (200 resamples of users, seeded)
+Shipped View 2 PR-AUC recomputed here matches metrics.json: True
+Verdict: SAME. The challenger is not clearly better than the shipped model: the View 2 PR-AUC interval includes zero. The shipped model stays.
+The app is NOT switched to the challenger; promotion is a separate decision.

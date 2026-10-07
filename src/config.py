@@ -14,7 +14,7 @@ DAYS_IN_MONTH = 30  # Every simulated month has this many days, to keep things s
 PREDICTION_DAY = 20  # We predict at the end of this day, using only days 1 to this day.
 SHORTFALL_FLOOR_BDT = 500  # A user is flagged if their balance falls below this many BDT after the prediction day.
 TEST_MONTHS = 2  # The latest this-many months are held out for testing; earlier months are for training.
-SAVINGS_CAP_FRACTION = 0.5  # A savings suggestion never exceeds this share of the user's predicted safe surplus.
+SAVINGS_CAP_FRACTION = 0.5  # Savings capacity = this share of the user's average monthly net (money in minus out) over earlier months, day-1 cash-outs left out.
 CASHOUT_FEE_RATE = 0.015  # ASSUMPTION placeholder. Researcher must replace with a sourced figure from upay's official site.
 FAIRNESS_COLUMNS = ["income_band", "region", "age_band"]  # Groups we compare results across; never used as model inputs.
 LANGUAGES = ["en", "bn"]  # Supported languages: English and Bangla.
@@ -86,7 +86,7 @@ MIN_GROUP_ROWS = 150  # Fairness groups with fewer test rows than this are marke
 RISK_BAND_HIGH_PROB = 0.6  # An alert with a chance at or above this is shown as "High", below it as "Medium".
 BUFFER_ROUND_BDT = 500  # Buffer amounts (and the shown minimum balance) are rounded to this many BDT.
 BUFFER_MIN_BDT = 500  # A suggested buffer is never smaller than this.
-CASHOUT_SAVER_MIN_COUNT = 2  # The cash-out fee tip only appears with at least this many cash-outs on days 1-20.
+CASHOUT_SAVER_MIN_COUNT = 2  # The cash-out fee tip only appears with at least this many cash-outs on days 2-20 (day 1 is left out, see below).
 CASHOUT_SAVER_EXCLUDE_DAY1 = True  # Leave day-1 cash-outs out of the tip (they are mostly balance sweeps).
 SAVINGS_MAX_MONTHS = 24  # A savings plan never runs longer than this many months.
 USE_BENGALI_DIGITS = True  # Show Bangla messages with Bengali digits.
@@ -147,3 +147,11 @@ ANOMALY_TRAIN_FLAG_RATE = 0.01  # The unusual-activity cut flags this share of t
 ANOMALY_INJECTED_ROWS = 500  # Artificial outliers injected into a copy of the test months for evaluation.
 ANOMALY_INJECT_MULT = (5.0, 10.0)  # Injected outliers are this many times a real transaction's amount.
 ANOMALY_DIR = ARTIFACTS_DIR / "anomaly"  # Saved unusual-activity model and its evaluation.
+
+# ---------------------------------------------------------------------------
+# Phase 2E/2D: integration events, load test, challenger experiment.
+# ---------------------------------------------------------------------------
+INTEGRATION_MAX_BATCH = 500  # Most transactions accepted in one POST /integration/events batch.
+LOAD_TEST_FILE = ARTIFACTS_DIR / "load_test.json"  # Written by scripts/load_test.py.
+CHALLENGER_DIR = ARTIFACTS_DIR / "challenger"  # Written by python -m src.models.tune_challenger.
+CHALLENGER_TRIALS = 30  # Random-search settings tried for the challenger (training months only).

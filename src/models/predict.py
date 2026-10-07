@@ -80,7 +80,7 @@ def predict_and_explain(features: dict) -> dict:
     probability = float(clf.predict_proba(X)[0, 1])  # Chance of dipping below the floor.
     return {"probability": round(probability, 6),
             "alert": probability >= alert_threshold(info),
-            "predicted_min_balance": int(round(float(reg.predict(X)[0]))),  # Buffer amount, BDT.
+            "predicted_min_balance": int(round(float(reg.predict(X)[0]))),  # Helper model's lowest balance on days 21-30, BDT (not the buffer).
             "reasons": top_reasons(clf, X, features)}
 
 

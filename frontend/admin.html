@@ -182,6 +182,8 @@
           <p class="soft" data-s="monNote"></p>
           <ul class="stats" id="mon-stats"></ul>
           <div class="table-wrap"><table id="mon-rejected"></table></div>
+          <p class="soft" data-s="fbNote"></p>
+          <div class="table-wrap"><table id="mon-feedback"></table></div>
           <div class="row">
             <button type="button" class="btn small" id="mon-refresh" data-s="refresh"></button>
             <button type="button" class="btn warn admin-only" id="reset-live" data-s="resetLive"></button>
@@ -229,7 +231,8 @@
         monTitle: "6. Monitoring", monNote: "Counts from this machine's logs. All transactions are simulated.",
         mon: { live_processed: "Live transactions scored", unusual_flags: "Unusual-for-user flags", budget_warnings: "Budget warnings shown",
                median_scoring_ms: "Median scoring time (ms)", live_rows_stored: "Live rows stored", staff_wallet_views: "Staff wallet views" },
-        monAlerts: (band) => "Scored with " + band + " risk", bands: { low: "low", medium: "medium", high: "high" },
+        monAlerts: (band) => "Scored at " + band, bands: { low: "Level 1 (low)", medium: "Level 2 (medium)", high: "Level 3 (high)" },
+        fbCols: ["Group", "Question:answer", "Count"], fbNote: "Feedback per group. Groups are recorded only; both see the same screen.",
         rejCols: ["Rejected because", "Count"], noValue: "-",
         resetLive: "Reset all live data", resetConfirm: "Delete every live transaction for every user?",
         resetDone: (n) => "Deleted " + n + " live transactions."
@@ -266,7 +269,8 @@
         monTitle: "৬. পর্যবেক্ষণ", monNote: "এই কম্পিউটারের লগ থেকে গণনা। সব লেনদেন সিমুলেটেড।",
         mon: { live_processed: "মূল্যায়ন করা লাইভ লেনদেন", unusual_flags: "ব্যবহারকারীর জন্য অস্বাভাবিক চিহ্ন", budget_warnings: "দেখানো বাজেট সতর্কবার্তা",
                median_scoring_ms: "মূল্যায়নের মধ্যমা সময় (মি.সে.)", live_rows_stored: "সংরক্ষিত লাইভ সারি", staff_wallet_views: "কর্মীদের ওয়ালেট দেখা" },
-        monAlerts: (band) => band + " ঝুঁকিতে মূল্যায়ন", bands: { low: "কম", medium: "মাঝারি", high: "উচ্চ" },
+        monAlerts: (band) => band + " হিসেবে মূল্যায়ন", bands: { low: "স্তর ১ (কম)", medium: "স্তর ২ (মাঝারি)", high: "স্তর ৩ (উচ্চ)" },
+        fbCols: ["দল", "প্রশ্ন:উত্তর", "সংখ্যা"], fbNote: "দল অনুযায়ী মতামত। দল শুধু লিখে রাখা হয়; দুই দলই একই পর্দা দেখে।",
         rejCols: ["প্রত্যাখ্যানের কারণ", "সংখ্যা"], noValue: "-",
         resetLive: "সব লাইভ ডেটা মুছে দিন", resetConfirm: "সব ব্যবহারকারীর সব লাইভ লেনদেন মুছে দেবেন?",
         resetDone: (n) => n + "টি লাইভ লেনদেন মুছে দেওয়া হয়েছে।"
@@ -473,6 +477,11 @@
       for (const [band, n] of Object.entries(d.alerts_by_level || {})) items.push(stat(S().monAlerts(S().bands[band] || band), num(n)));
       $("mon-stats").replaceChildren(...items);
       fillTable("mon-rejected", S().rejCols, Object.entries(d.rejected_by_code || {}).map(([code, n]) => [code, num(n)]));
+      const fbRows = [];
+      for (const [group, answers] of Object.entries(d.feedback_by_group || {})) {
+        for (const [qa, n] of Object.entries(answers)) fbRows.push([group, qa, num(n)]);
+      }
+      fillTable("mon-feedback", S().fbCols, fbRows);
     }
     $("mon-refresh").addEventListener("click", () => { loadMonitoring(); loadAudit(); });
     $("reset-live").addEventListener("click", async () => {

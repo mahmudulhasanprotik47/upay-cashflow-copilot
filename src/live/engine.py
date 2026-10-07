@@ -16,7 +16,6 @@ import time  # Scoring time.
 
 import numpy as np  # Number tools.
 import pandas as pd  # Table tools.
-from xgboost import DMatrix  # Full SHAP contribution vector.
 
 from src import config as cfg  # Types, limits, prediction day.
 from src.api import deps, service  # Consent and switches; forecast and the overlay hook.
@@ -24,9 +23,8 @@ from src.data.generator import cashout_fee  # The generator's own fee rule (impo
 from src.db import database  # Live rows and the prediction log.
 from src.features.build_features import FEATURES, build_features  # The existing feature function, unchanged.
 from src.i18n.messages import render  # The unusual-activity note.
-from src.live import budgets  # Budget bars.
+from src.live import budgets, risk_factors  # Budget bars; risk-factor codes and the model target.
 from src.models import anomaly  # Unusual-for-you check.
-from src.models.predict import load_artifacts, validate  # The saved model and its input checks.
 
 DAY = cfg.PREDICTION_DAY
 # ponytail: one lock serialises live writes and view rebuilds for everyone; per-user locks if it ever queues.
@@ -113,13 +111,6 @@ def install():
     anomaly.load()
     daily_balance(1)  # Read the balance table now, so the first live score's time is not a file read.
     service.OVERLAY = overlay
-
-
-def shap_vector(features):
-    """All 11 SHAP contributions (log-odds) for one feature set, plus the bias, from the saved model."""
-    clf, _, _ = load_artifacts()
-    contribs = clf.get_booster().predict(DMatrix(validate(features)), pred_contribs=True)[0]
-    return {f: float(c) for f, c in zip(FEATURES, contribs[:-1])}, float(contribs[-1])
 
 
 def balances_now(user_id, month):
@@ -214,7 +205,8 @@ def submit(user_id, month, day, type_, amount, key, lang="en", source="live", ba
     return {"accepted": True, "simulated": True, "computed_on": "this machine", "ms": ms,
             "transaction": {"id": cur.lastrowid, "user_id": user_id, "month": month, "day": day, "type": type_,
                             "direction": cfg.LIVE_TYPES[type_], "amount_bdt": int(amount), "fee_bdt": fee},
-            "assessment": {**after, "data_subject": deps.data_subject(user_id)},
+            "assessment": {**risk_factors.enrich(after, service.features_for(user_id, month), lang),
+                           "data_subject": deps.data_subject(user_id)},
             "changed": {"band_before": before["risk_band"], "band_after": after["risk_band"],
                         "alert_before": before["alert"], "alert_after": after["alert"],
                         "reasons_added": [f for f in reasons_after if f not in reasons_before],

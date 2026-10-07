@@ -102,3 +102,28 @@ No group is below 150 rows, so none is marked LOW SAMPLE. The groups only differ
 - The model only makes **suggestions**. Nothing moves money automatically. The user decides; the app only shows suggestions.
 - A user predicted to run short is offered a buffer suggestion, never a savings suggestion.
 - The alert threshold can be changed in one place (`ALERT_THRESHOLD_OVERRIDE` in `src/config.py`). Any change should be reviewed by a person, together with the fairness numbers.
+
+## Phase 2 additions
+
+- **Risk factor register.** Each of the 11 inputs has a fixed code, RF-01 to RF-11, in the order of the
+  feature list. Each shown reason carries its code, its rank, whether it raises or lowers risk, and a
+  strength from 1 to 5: ceil(5 x |SHAP| / sum of |SHAP| over the 11 inputs for that prediction). Bands
+  are numbered Level 1 (low), Level 2 (medium) and Level 3 (high).
+- **Model-driven target balance.** For an alert, a binary search finds the smallest day-20 balance at
+  which the saved model stops alerting, with the other inputs fixed, rounded up to 500 BDT and capped at
+  500,000 BDT. It is valid because of the monotone constraint on `balance_day20`; self-check 21 verifies
+  this on a grid. It is shown as "From the model", next to the rule-based buffer. It describes the model,
+  not a cause.
+- **Live rescoring.** Features are rebuilt with the unchanged `build_features` from the simulated month
+  plus live rows, cut at day 20 exactly as the leakage test does. Self-check 20 checks the running balance.
+- **Unusual-activity check** (`artifacts/anomaly/metrics.json`). An IsolationForest on amount relative to
+  the user's own earlier months, day, and share of the opening balance. It is not fraud detection.
+  - One design change was made after a first run, and it is disclosed: one-hot type columns were removed.
+  - Result: it caught 1.8% of the injected outliers, with a 1.03% false-flag rate on normal rows. It does
+    not separate them.
+- **Challenger experiment** (`artifacts/challenger/`).
+  - Nine extra candidate features (leakage test passed for each) and 30 seeded settings chosen on the
+    training months only. Test months were scored once.
+  - View 2 PR-AUC: shipped 0.422, challenger 0.409, rule 0.392.
+  - Challenger minus shipped: 95% interval -0.043 to +0.015.
+  - Verdict: not clearly better. The app still uses the shipped model.
